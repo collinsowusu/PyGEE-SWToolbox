@@ -2,6 +2,8 @@ import ee
 #import geetools
 from geetools import tools
 import geemap
+import hydrafloods as hf
+from hydrafloods import geeutils
 
 def DSWE(imgCollection, DEM, aoi=None):
     
@@ -359,4 +361,120 @@ def maskLandsatclouds(image):
     #.And(qa.bitwiseAnd(cloudsBitMask).eq(0))
     return (image.updateMask(mask).copyProperties(orig, orig.propertyNames()))
 
- 
+def compute_histogram(img,aoi,img_scale):
+    
+    reducers = ee.Reducer.histogram(255,2).combine(reducer2=ee.Reducer.mean(), sharedInputs=True)\
+                .combine(reducer2=ee.Reducer.variance(), sharedInputs= True)
+    histogram = img.select('waterMask').reduceRegion(
+        reducer=reducers,
+        geometry=aoi.geometry(),
+        scale=img_scale,
+        bestEffort=True)
+    return histogram
+
+def otsu(histogram):
+    """
+    Function to use Otsu algorithm to compute DN that maximizes interclass variance in the region 
+
+    args:
+        Histogram
+
+    returns:
+        Otsu's threshold
+    """
+    counts = ee.Array(ee.Dictionary(histogram).get('histogram'))
+    means = ee.Array(ee.Dictionary(histogram).get('bucketMeans'))
+    size = means.length().get([0])
+    total = counts.reduce(ee.Reducer.sum(), [0]).get([0])
+    sum = means.multiply(counts).reduce(ee.Reducer.sum(), [0]).get([0])
+    mean = sum.divide(total)
+    indices = ee.List.sequence(1, size)
+    
+    # Compute between sum of squares, where each mean partitions the data.
+    def func_bss(i):
+        aCounts = counts.slice(0, 0, i)
+        aCount = aCounts.reduce(ee.Reducer.sum(), [0]).get([0])
+        aMeans = means.slice(0, 0, i)
+        aMean = aMeans.multiply(aCounts) \
+            .reduce(ee.Reducer.sum(), [0]).get([0]) \
+            .divide(aCount)
+        bCount = total.subtract(aCount)
+        bMean = sum.subtract(aCount.multiply(aMean)).divide(bCount)
+        return aCount.multiply(aMean.subtract(mean).pow(2)).add(
+               bCount.multiply(bMean.subtract(mean).pow(2)))
+    
+    bss = indices.map(func_bss)
+    return means.sort(bss).get([-1])
+
+
+
+# def extract_MSI_water(img, platform, index, aoi, img_scale):
+    
+#     """
+#     Function to extract surface water from Landsat and Sentinel-2 images using
+#     water extraction indices: NDWI, MNDWI, and AWEI
+
+#     args:
+#         Image
+
+#     returns:
+#         Image with water mask
+#     """
+#     index_image = ee.Image(1)
+#     if index == 'NDWI':
+#         if platform == 'Landsat':
+#             bands = ['green', 'nir']
+#         elif platform == 'Sentinel-2':
+#             bands = ['green', 'nir']
+#         elif platform == 'USDA NAIP':
+#             bands = ['G', 'N']
+#         index_image = img.normalizedDifference(bands).rename('waterMask')
+#         hist = compute_histogram(index_image, aoi, img_scale)
+#         threshold = otsu(hist.get('waterMask_histogram'))
+#         water_image = index_image.gt(threshold).selfMask().copyProperties(img, ['system:time_start'])
+#     elif index == 'MNDWI':
+#         if platform == 'Landsat':
+#             bands = ['green', 'swir1']
+#         elif platform == 'Sentinel-2':
+#             bands = ['green', 'swir1']
+#         index_image = img.normalizedDifference(bands).rename('waterMask')
+#         water_image = index_image.gt(nd_threshold).selfMask().copyProperties(img, ['system:time_start'])
+#     elif index == 'AWEInsh':
+#         if platform == 'Landsat':
+#             index_image = img.expression(
+#                     '(4 * (GREEN - SWIR1)) - ((0.25 * NIR)+(2.75 * SWIR2))', {
+#                         'NIR': img.select('nir'),
+#                         'GREEN': img.select('green'),
+#                         'SWIR1': img.select('swir1'),
+#                         'SWIR2': img.select('swir2')
+#                     }).rename('waterMask')
+#         elif platform == 'Sentinel-2':
+#             index_image = img.expression(
+#                     '(4 * (GREEN - SWIR1)) - ((0.25 * NIR)+(2.75 * SWIR2))', {
+#                         'NIR': img.select('nir'),
+#                         'GREEN': img.select('green'),
+#                         'SWIR1': img.select('swir1'),
+#                         'SWIR2': img.select('swir2')
+#                     }).rename('waterMask')
+#         water_image = index_image.gt(nd_threshold).selfMask().copyProperties(img, ['system:time_start'])
+#     elif index == 'AWEIsh':
+#         if platform == 'Landsat':
+#             index_image = img.expression(
+#                     '(BLUE + (2.5 * GREEN) - (1.5 * (NIR + SWIR1)) - (0.25 * SWIR2))', {
+#                         'BLUE':img.select('blue'),
+#                         'NIR': img.select('nir'),
+#                         'GREEN': img.select('green'),
+#                         'SWIR1': img.select('swir1'),
+#                         'SWIR2': img.select('swir2')
+#                     }).rename('waterMask')
+#         elif platform == 'Sentinel-2':
+#             index_image = img.expression(
+#                     '(BLUE + (2.5 * GREEN) - (1.5 * (NIR + SWIR1)) - (0.25 * SWIR2))', {
+#                         'BLUE':img.select('blue'),
+#                         'NIR': img.select('nir'),
+#                         'GREEN': img.select('green'),
+#                         'SWIR1': img.select('swir1'),
+#                         'SWIR2': img.select('swir2')
+#                     }).rename('waterMask')
+#         water_image = index_image.gt(nd_threshold).selfMask().copyProperties(img, ['system:time_start'])    
+#     return water_image
