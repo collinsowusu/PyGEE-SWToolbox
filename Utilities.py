@@ -312,17 +312,23 @@ def load_NAIP(aoi, StartDate, EndDate):
         .sort('system:time_start')
     return filtered_col
 
-def load_shapefile(shapefile):
+def load_boundary(boundaryfile):
     """
     Function to laod shapefile
         
     args:
-        Shapefile: An ESRI shapefile for the aoi boudary (WGS84 projection)
+        boundaryfile: An ESRI shapefile for the aoi boudary (WGS84 projection) or KML OR KMZ
 
     returns:
         ee user boundary
     """
-    aoi = geemap.shp_to_ee(shapefile)
+    extension = boundaryfile[-3:]
+    if extension == "shp":       
+        aoi = geemap.shp_to_ee(boundaryfile)
+    elif extension == "kml":
+        aoi = geemap.kml_to_ee(boundaryfile)
+    else:
+        aoi = geemap.kmz_to_ee(boundaryfile)
     return aoi
 
 def maskS2clouds(image):
@@ -406,8 +412,64 @@ def otsu(histogram):
     bss = indices.map(func_bss)
     return means.sort(bss).get([-1])
 
+def image_scale(img):
+    """Retrieves the image cell size (e.g., spatial resolution)
+    Args:
+        img (object): ee.Image
+    Returns:
+        float: The nominal scale in meters.
+    """   
+    return img.projection().nominalScale().getInfo()
 
+def image_max_value(img, region=None, scale=None):
+    """Retrieves the maximum value of an image.
+    Args:
+        img (object): The image to calculate the maximum value.
+        region (object, optional): The region over which to reduce data. Defaults to the footprint of the image's first band.
+        scale (float, optional): A nominal scale in meters of the projection to work in. Defaults to None.
+    Returns:
+        object: ee.Number
+    """
+    if region is None:
+        region = img.geometry()
 
+    if scale is None:
+        scale = image_scale(img)
+
+    max_value = ee.Number(img.reduceRegion(**{
+        'reducer': ee.Reducer.max(),
+        'geometry': region,
+        'scale': scale,
+        'maxPixels': 1e12,
+        'bestEffort':True
+        }).values().get(0))
+    return max_value.getInfo()
+
+def image_min_value(img, region=None, scale=None):
+    """Retrieves the minimum value of an image.
+    Args:
+        img (object): The image to calculate the minimum value.
+        region (object, optional): The region over which to reduce data. Defaults to the footprint of the image's first band.
+        scale (float, optional): A nominal scale in meters of the projection to work in. Defaults to None.
+    Returns:
+        object: ee.Number
+    """
+    if region is None:
+        region = img.geometry()
+
+    if scale is None:
+        scale = image_scale(img)
+
+    min_value = ee.Number(img.reduceRegion(**{
+        'reducer': ee.Reducer.min(),
+        'geometry': region,
+        'scale': scale,
+        'maxPixels': 1e12,
+        'bestEffort':True
+    }).values().get(0))
+    return min_value.getInfo()
+
+# Function for extracting water from MS images
 # def extract_MSI_water(img, platform, index, aoi, img_scale):
     
 #     """
