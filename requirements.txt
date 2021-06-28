@@ -8,4 +8,3 @@ earthengine_api>=0.1.230
 pandas
 hydrafloods
 plotly
-notebook
