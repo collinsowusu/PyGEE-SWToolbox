@@ -1,6 +1,5 @@
-
 # PyGEE-SWToolbox
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)
+[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs)  
 A Python Jupyter notebook toolbox for interactive surface water mapping using 
 Google Earth Engine. 
 
@@ -11,8 +10,8 @@ computing platform. Conventional use of the GEE platform requires the user to ab
 JavaScript codes in the GEE online Code Editor or the use of Python codes using the Python 
 API to perform geospatial processing of datasets. This toolbox provides a graphical user
 interface (GUI) for surface water analysis and visualiztion without the user writing a 
-single line of code. The GUI was developed using ipyleaflet and ipywidgets.
-
+single line of code. The GUI was developed using ipyleaflet and ipywidgets. The toolbox
+relies on the <b>GEE Python API, geemap, geetools, eemont, and hydrafloods</b> packages.
 
 ## Installation 
 
