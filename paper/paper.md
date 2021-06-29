@@ -29,22 +29,34 @@ bibliography: paper.bib
 # Summary
 
 PyGEE-SWToolbox is Python-Google Earth Engine (GEE) [@gorelick2017google] Surface Water Analyzer toolbox 
-developed in Jupyter notebook for interactive surface water mapping using the GEE 
-cloud computing platform. GEE has been applied in various aspects of water resource monitoring such as wetland inundation 
-dynamics [@Wu2019], flood monitoring [@DeVries2020],satellite-derived bathymetry [@Casal2020], and gap-filling of time series [@Walker2020].
-Conventional use of the GEE platform requires the user to able to write JavaScript codes in the GEE online Code Editor or the use of Python codes 
-using the Python API to perform geospatial processing of datasets. This toolbox provides a graphical user interface (GUI) for surface water analysis 
-and visualization without the user writing a single line of code. The GUI was developed using ipyleaflet and ipywidgets. 
-The toolbox relies on the <b>GEE Python API, geemap [@Wu2020], geetools, eemont [@Montero2021], hydra-floods, geopandas, 
-and plotly</b> packages.
+developed in Jupyter notebook for interactive surface water mapping using the GEE cloud computing platform.
+This toolbox provides a graphical user interface (GUI) for surface water extraction, water occurrence frequency 
+and hydroperiod analysis, time series analysis, and visualization using GEE without the user writing a single 
+line of JavaScript or Python code. The GUI was developed using ipyleaflet and ipywidgets. The toolbox relies 
+on the <b>GEE Python API, geemap [@Wu2020], geetools, eemont [@Montero2021], hydra-floods, geopandas, and 
+plotly</b> packages. The toolbox provides users an easy way to analyze and visualize GEE datasets for water resource
+applications.
 
+
+# Statement of need
+
+GEE has been applied in various aspects of water resource monitoring such as wetland inundation 
+dynamics [@Wu2019], flood monitoring [@DeVries2020], satellite-derived bathymetry [@Casal2020], and 
+gap-filling of time series [@Walker2020]. Conventional use of the GEE platform requires the user to 
+able to write JavaScript codes in the GEE online Code Editor or the use of Python codes using the Python 
+API to perform geospatial processing of datasets. This is sometime problematic for some researchers and 
+water resource managers who have no knowledge in programming or not used to the languages needed to 
+communicate with the GEE platform. 
 
 # Audience
 
 The toolbox is intended for researchers, water resource managers, and planners who would 
 like to utilize the geospatial datasets and cloud computing power of the GEE platform to
 monitor changes in water resources with little to no knowledge on the use of the platform and it's 
-coding requirements.
+coding requirements. The toolbox is currently being used by a team of civil engineering and biology students 
+monitoring the hydrology of wetlands under the Wetland Reserve Program (WRP) which was being monitored 
+to assess the effectiveness of wetland restoration practices implemented by the Natural Resources 
+Conservation Service (NRCS) in West Tennessee and West Kentucky
 
 # Functionality
 
