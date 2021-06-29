@@ -57,7 +57,7 @@ It is recommended to have [Anaconda](https://www.anaconda.com/distribution/#down
   conda create -n SWTBX python=3.8
   conda activate SWTBX
   conda install -c conda-forge notebook
-  conda install geopandas
+  conda install -c conda-forge geopandas
 ```
 The required packages can be found in the requirements.txt file in the project directory.
 These packages can be installed manually as:
@@ -74,13 +74,11 @@ packages using pip:
 ```
 ## Usage
 
-```javascript
-import Component from 'my-project'
+In your created Python environmnet, open Jupyter notebook. With the notebook runing, open
+the PyGEE-SWToolbox notebook file.
 
-function App() {
-  return <Component />
-}
-```
+The toolbox notebook contains two cell. Run the first cell to authenticate the GEE Python
+API using your Google Account. Run the second cell to display the GUI.
 
   
 ## License
