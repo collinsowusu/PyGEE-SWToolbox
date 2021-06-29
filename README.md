@@ -37,8 +37,8 @@ The list below shows some of the features available in the toolbox.
   
 ## Installation 
 
-To use the PyGEE-SWToolbox, the user must first sign up for a Google account to authenticate 
-the use of the GEE API. The user has to clone the project repository using Git Bash shown 
+To use the PyGEE-SWToolbox, the user must first sign up for a Google Earth Engine account to authenticate 
+the use of the GEE API. The user has to clone the project repository using Git Bash as shown 
 below:
 
 ``` 
@@ -96,8 +96,3 @@ reflect the views of the Natural Resources Conservation Service or The Nature Co
 
 The authors would like to thank the developers of <b>ipywidgets, geemap, eemont, geetools, 
 geopandas, and hydrafloods</b> packages.
-## References
-
-- Wu, Q., (2020). geemap: A Python package for interactive mapping with Google Earth Engine. The Journal of Open Source Software, 5(51), 2305. https://doi.org/10.21105/joss.02305
-- Wu, Q., Lane, C. R., Li, X., Zhao, K., Zhou, Y., Clinton, N., DeVries, B., Golden, H. E., & Lang, M. W. (2019). Integrating LiDAR data and multi-temporal aerial imagery to map wetland inundation dynamics using Google Earth Engine. Remote Sensing of Environment, 228, 1-13. https://doi.org/10.1016/j.rse.2019.04.015
-- Montero, D., (2021). eemont: A Python package that extends Google Earth Engine. Journal of Open Source Software, 6(62), 3168, https://doi.org/10.21105/joss.03168
