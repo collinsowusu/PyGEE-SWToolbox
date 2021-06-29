@@ -85,6 +85,37 @@ API using your Google Account. Run the second cell to display the GUI.
 
 This project is licensed under the [MIT](https://choosealicense.com/licenses/mit/) license.
 
+## How to cite
+If you find PyGEE-SWToolbox useful, please cite this work as:
+
+Collins Owusu, Nusrat J. Snigdha, Mackenzie T. Martin, & Alfred J. Kalyanapu. (2021, June 8). PyGEE-SWToolbox: A Python-Google Earth Engine Surface Water Analysis Toolbox (Version v.1.0.0). Zenodo. http://doi.org/10.5281/zenodo.4910772
+
+BibTeX if required:
+
+	@software{collins_owusu_2021_4910772,
+	  author       = {Collins Owusu and
+					  Nusrat J. Snigdha and
+					  Mackenzie T. Martin and
+					  Alfred J. Kalyanapu},
+	  title        = {{PyGEE-SWToolbox: A Python-Google Earth Engine 
+					   Surface Water Analysis Toolbox}},
+	  month        = jun,
+	  year         = 2021,
+	  note         = {{This toolbox is based upon work supported by the 
+					   Natural Resources Conservation Service, U.S.
+					   Department of Agriculture, and The Nature
+					   Conservancy, under award number 68-5C16-17-015.
+					   Any opinions, findings, conclusions, or
+					   recommendations expressed in this publication are
+					   those of the authors and do not necessarily
+					   reflect the views of the Natural Resources
+					   Conservation Service or The Nature Conservancy.}},
+	  publisher    = {Zenodo},
+	  version      = {v.1.0.0},
+	  doi          = {10.5281/zenodo.4910772},
+	  url          = {https://doi.org/10.5281/zenodo.4910772}
+	}
+
   
 ## Acknowledgements
 
