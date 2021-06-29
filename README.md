@@ -1,6 +1,6 @@
 
 # PyGEE-SWToolbox
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs) [![DOI](https://zenodo.org/badge/374874735.svg)](https://zenodo.org/badge/latestdoi/374874735)
+[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5042363.svg)](https://doi.org/10.5281/zenodo.5042363)
 
 A Python Jupyter notebook toolbox for interactive surface water mapping using Google 
 Earth Engine.
@@ -88,11 +88,10 @@ This project is licensed under the [MIT](https://choosealicense.com/licenses/mit
 ## How to cite
 If you find PyGEE-SWToolbox useful, please cite this work as:
 
-Collins Owusu, Nusrat J. Snigdha, Mackenzie T. Martin, & Alfred J. Kalyanapu. (2021, June 8). PyGEE-SWToolbox: A Python-Google Earth Engine Surface Water Analysis Toolbox (Version v.1.0.0). Zenodo. http://doi.org/10.5281/zenodo.4910772
+Collins Owusu, Nusrat J. Snigdha, Mackenzie T. Martin, & Alfred J. Kalyanapu. (2021, June 29). PyGEE-SWToolbox: A Python-Google Earth Engine Surface Water Analysis Toolbox (Version v.1.0.1). Zenodo. http://doi.org/10.5281/zenodo.5042363
 
 BibTeX if required:
-
-	@software{collins_owusu_2021_4910772,
+	@software{collins_owusu_2021_5042363,
 	  author       = {Collins Owusu and
 					  Nusrat J. Snigdha and
 					  Mackenzie T. Martin and
@@ -111,11 +110,10 @@ BibTeX if required:
 					   reflect the views of the Natural Resources
 					   Conservation Service or The Nature Conservancy.}},
 	  publisher    = {Zenodo},
-	  version      = {v.1.0.0},
-	  doi          = {10.5281/zenodo.4910772},
-	  url          = {https://doi.org/10.5281/zenodo.4910772}
+	  version      = {v.1.0.1},
+	  doi          = {10.5281/zenodo.5042363},
+	  url          = {https://doi.org/10.5281/zenodo.5042363}
 	}
-
   
 ## Acknowledgements
 
