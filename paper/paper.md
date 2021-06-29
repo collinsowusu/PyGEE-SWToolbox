@@ -11,13 +11,13 @@ authors:
     orcid: 0000-0001-6754-9311
     affiliation: "1"
   - name: Nusrat J. Snigdha
-	orcid: 0000-0002-9444-1469
+    orcid: 0000-0002-9444-1469
     affiliation: "1"
   - name: Mackenzie T. Martin
-	orcid: 0000-0002-7744-2080
+    orcid: 0000-0002-7744-2080
     affiliation: "1"
   - name: Alfred J. Kalyanapu
-	orcid: 0000-0002-7746-3121
+    orcid: 0000-0002-7746-3121
     affiliation: "1"
 affiliations:
  - name: Civil and Environmental Engineering Department, Tennessee Technological University
@@ -46,7 +46,7 @@ like to utilize the geospatial datasets and cloud computing power of the GEE pla
 monitor changes in water resources with little to no knowledge on the use of the platform and it's 
 coding requirements.
 
-# PyGEE-SWToolbox Functionality
+# Functionality
 
 PyGEE-SWToolbox can:
 - Retrieve  a time series of Landsat, Sentinel-1, and Sentinel-2 satellite imagery for a study area.
