@@ -91,6 +91,7 @@ If you find PyGEE-SWToolbox useful, please cite this work as:
 Collins Owusu, Nusrat J. Snigdha, Mackenzie T. Martin, & Alfred J. Kalyanapu. (2021, June 29). PyGEE-SWToolbox: A Python-Google Earth Engine Surface Water Analysis Toolbox (Version v.1.0.1). Zenodo. http://doi.org/10.5281/zenodo.5042363
 
 BibTeX if required:
+
 	@software{collins_owusu_2021_5042363,
 	  author       = {Collins Owusu and
 					  Nusrat J. Snigdha and
