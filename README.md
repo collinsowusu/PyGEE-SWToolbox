@@ -13,7 +13,7 @@ PyGEE-SWToolbox is Python-Google Earth Engine (GEE) Surface Water Analyzer toolb
  Python API to perform geospatial processing of datasets. This toolbox provides a graphical 
  user interface (GUI) for surface water analysis and visualization without the user writing 
  a single line of code. The GUI was developed using ipyleaflet and ipywidgets. The toolbox 
- relies on the <b>GEE Python API, geemap, geetools, eemont, hydrafloods, geopandas, and 
+ relies on the <b>GEE Python API, geemap, geetools, eemont, hydra-floods, geopandas, and 
  plotly</b> packages.
 
  The toolbox is intended for researchers, water resource managers, and planners who would
@@ -27,7 +27,7 @@ The list below shows some of the features available in the toolbox.
 - Interactive definition of study area, shapefile upload and study period using the GUI.
 - Retrieval of timeseries of satellite imagery for the study area and make them analysis
     ready.
-- Extract of surface water from all retreived satellite imagery using water extraction
+- Extraction of surface water from all retreived satellite imagery using water extraction
     indices such as NDWI, MNDWI, AWEI, and DSWE.
 - Generate a timeseries of surface water area dynamics and export timeseries to CSV format.
 - Perform water occurency frequency and hydroperiod analysis.
