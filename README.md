@@ -51,19 +51,19 @@ The project archive can also be downloaded from [Zenodo](https://zenodo.org/reco
 It is recommended to have [Anaconda](https://www.anaconda.com/distribution/#download-section)
  or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your computer. 
  You should create a conda Python environment and install Jupyter notebook and geopandas with
- the following commands:
+ the following commands (where SWTBX is the name of the environment):
 
 ``` 
-  conda create -n SWTBX python=3.8
+  conda create -n SWTBX
   conda activate SWTBX
-  conda install -c conda-forge notebook
-  conda install -c conda-forge geopandas
+  conda install pip
+  conda install -c conda-forge notebook 
 ```
 The required packages can be found in the requirements.txt file in the project directory.
 These packages can be installed manually as:
 
 ``` 
-  conda install <package name>
+  pip install <package name>
 ```
 Optionally, you can change to the project directory at the conda prompt and install all 
 packages using pip:
@@ -74,11 +74,18 @@ packages using pip:
 ```
 ## Usage
 
-In your created Python environmnet, open Jupyter notebook. With the notebook runing, open
-the PyGEE-SWToolbox notebook file.
+In your created conda environmnet, open Jupyter notebook as:
 
-The toolbox notebook contains two cell. Run the first cell to authenticate the GEE Python
-API using your Google Account. Run the second cell to display the GUI.
+``` 
+  jupyter notebook
+```
+
+With the notebook runing, open the PyGEE-SWToolbox notebook file. The toolbox notebook contains two cell. 
+Run the first cell which will import the GEE API and initialize it. First time run of the notebook will
+require you to authenticate the GEE API using your GEE Account. Run the second cell to display the GUI 
+of the toolbox.
+
+Refer to the User Manual in the project directory on how to use the toolbox.
 
   
 ## License
