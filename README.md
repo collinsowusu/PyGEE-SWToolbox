@@ -80,7 +80,7 @@ In your created conda environmnet, open Jupyter notebook as:
   jupyter notebook
 ```
 
-With the notebook runing, open the PyGEE-SWToolbox notebook file. The toolbox notebook contains two cell. 
+With the notebook running, open the PyGEE-SWToolbox notebook file. The toolbox notebook contains two cell. 
 Run the first cell which will import the GEE API and initialize it. First time run of the notebook will
 require you to authenticate the GEE API using your GEE Account. Run the second cell to display the GUI 
 of the toolbox.
