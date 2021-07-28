@@ -50,12 +50,12 @@ The project archive can also be downloaded from [Zenodo](https://zenodo.org/reco
 
 It is recommended to have [Anaconda](https://www.anaconda.com/distribution/#download-section)
  or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your computer. 
- You should create a conda Python environment and install Jupyter notebook and geopandas with
- the following commands (where SWTBX is the name of the environment):
+ You should create a conda Python environment and install pip and Jupyter notebook with
+ the following commands (where SWToolbox is the name of the environment which can be changed to a user-preferred name):
 
 ``` 
-  conda create -n SWTBX
-  conda activate SWTBX
+  conda create -n SWToolbox
+  conda activate SWToolbox
   conda install pip
   conda install -c conda-forge notebook 
 ```
