@@ -48,15 +48,16 @@ Optionally, on GitHub, navigate to the main page of the [repository](https://git
 and above the list of files click <b>Code</b> to download zip or open with GitHub Desktop. 
 The project archive can also be downloaded from [Zenodo](https://zenodo.org/record/4910772#.YNpSmzhKiUk).
 
-It is recommended to have [Anaconda](https://www.anaconda.com/distribution/#download-section)
- or [Miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your computer. 
- You should create a conda Python environment and install pip and Jupyter notebook with
- the following commands (where SWToolbox is the name of the environment which can be changed to a user-preferred name):
+It is recommended to download and install either [Miniconda](https://docs.conda.io/en/latest/miniconda.html) or
+[Anaconda](https://www.anaconda.com/distribution/#download-section) on your computer. Miniconda is recommended since it is 
+a minimal version of Anaconda with no third-party binaries. Open the Anaconda Prompt from your programs menu after the 
+miniconda or anaconda is installed. 
+Create a conda Python environment and install Jupyter notebook with the following commands 
+(where SWToolbox is the name of the environment which can be changed to a user-preferred name):
 
 ``` 
-  conda create -n SWToolbox
+  conda create -n SWToolbox python=3.8
   conda activate SWToolbox
-  conda install pip
   conda install -c conda-forge notebook 
 ```
 The required packages can be found in the requirements.txt file in the project directory.
