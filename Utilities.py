@@ -1,6 +1,7 @@
 import ee
+import eemont
 #import geetools
-from geetools import tools
+from geetools import tools, cloud_mask
 import geemap
 import hydrafloods as hf
 from hydrafloods import geeutils
@@ -264,6 +265,7 @@ def load_Sentinel1(site, StartDate, EndDate):
     returns:
         Image collection of Sentinel-1 images
     """
+	
     filtered_col = ee.ImageCollection('COPERNICUS/S1_GRD')\
         .filterDate(StartDate,EndDate)\
         .filter(ee.Filter.eq('instrumentMode', 'IW'))\
@@ -271,6 +273,7 @@ def load_Sentinel1(site, StartDate, EndDate):
         .filterMetadata('resolution_meters', 'equals', 10)\
         .filterBounds(site)\
         .sort('system:time_start')
+	
     return filtered_col
 
 def load_Sentinel2(aoi, StartDate, EndDate, cloud_thresh):
@@ -286,7 +289,7 @@ def load_Sentinel2(aoi, StartDate, EndDate, cloud_thresh):
     returns:
         Image collection of Sentinel-2 images
     """
-    filtered_col = ee.ImageCollection('COPERNICUS/S2')\
+    filtered_col = ee.ImageCollection('COPERNICUS/S2_SR')\
         .filterDate(StartDate,EndDate)\
         .filterBounds(aoi)\
         .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_thresh))\
@@ -468,75 +471,3 @@ def image_min_value(img, region=None, scale=None):
         'bestEffort':True
     }).values().get(0))
     return min_value.getInfo()
-
-# Function for extracting water from MS images
-# def extract_MSI_water(img, platform, index, aoi, img_scale):
-    
-#     """
-#     Function to extract surface water from Landsat and Sentinel-2 images using
-#     water extraction indices: NDWI, MNDWI, and AWEI
-
-#     args:
-#         Image
-
-#     returns:
-#         Image with water mask
-#     """
-#     index_image = ee.Image(1)
-#     if index == 'NDWI':
-#         if platform == 'Landsat':
-#             bands = ['green', 'nir']
-#         elif platform == 'Sentinel-2':
-#             bands = ['green', 'nir']
-#         elif platform == 'USDA NAIP':
-#             bands = ['G', 'N']
-#         index_image = img.normalizedDifference(bands).rename('waterMask')
-#         hist = compute_histogram(index_image, aoi, img_scale)
-#         threshold = otsu(hist.get('waterMask_histogram'))
-#         water_image = index_image.gt(threshold).selfMask().copyProperties(img, ['system:time_start'])
-#     elif index == 'MNDWI':
-#         if platform == 'Landsat':
-#             bands = ['green', 'swir1']
-#         elif platform == 'Sentinel-2':
-#             bands = ['green', 'swir1']
-#         index_image = img.normalizedDifference(bands).rename('waterMask')
-#         water_image = index_image.gt(nd_threshold).selfMask().copyProperties(img, ['system:time_start'])
-#     elif index == 'AWEInsh':
-#         if platform == 'Landsat':
-#             index_image = img.expression(
-#                     '(4 * (GREEN - SWIR1)) - ((0.25 * NIR)+(2.75 * SWIR2))', {
-#                         'NIR': img.select('nir'),
-#                         'GREEN': img.select('green'),
-#                         'SWIR1': img.select('swir1'),
-#                         'SWIR2': img.select('swir2')
-#                     }).rename('waterMask')
-#         elif platform == 'Sentinel-2':
-#             index_image = img.expression(
-#                     '(4 * (GREEN - SWIR1)) - ((0.25 * NIR)+(2.75 * SWIR2))', {
-#                         'NIR': img.select('nir'),
-#                         'GREEN': img.select('green'),
-#                         'SWIR1': img.select('swir1'),
-#                         'SWIR2': img.select('swir2')
-#                     }).rename('waterMask')
-#         water_image = index_image.gt(nd_threshold).selfMask().copyProperties(img, ['system:time_start'])
-#     elif index == 'AWEIsh':
-#         if platform == 'Landsat':
-#             index_image = img.expression(
-#                     '(BLUE + (2.5 * GREEN) - (1.5 * (NIR + SWIR1)) - (0.25 * SWIR2))', {
-#                         'BLUE':img.select('blue'),
-#                         'NIR': img.select('nir'),
-#                         'GREEN': img.select('green'),
-#                         'SWIR1': img.select('swir1'),
-#                         'SWIR2': img.select('swir2')
-#                     }).rename('waterMask')
-#         elif platform == 'Sentinel-2':
-#             index_image = img.expression(
-#                     '(BLUE + (2.5 * GREEN) - (1.5 * (NIR + SWIR1)) - (0.25 * SWIR2))', {
-#                         'BLUE':img.select('blue'),
-#                         'NIR': img.select('nir'),
-#                         'GREEN': img.select('green'),
-#                         'SWIR1': img.select('swir1'),
-#                         'SWIR2': img.select('swir2')
-#                     }).rename('waterMask')
-#         water_image = index_image.gt(nd_threshold).selfMask().copyProperties(img, ['system:time_start'])    
-#     return water_image
