@@ -28,7 +28,7 @@ bibliography: paper.bib
 
 # Summary
 
-PyGEE-SWToolbox is Python-Google Earth Engine (GEE) [@gorelick2017google] Surface Water Analyzer toolbox 
+PyGEE-SWToolbox is Python-Google Earth Engine (GEE) [@gorelick2017google] Surface Water Analysis toolbox 
 developed in Jupyter notebook for interactive surface water mapping using the GEE cloud computing platform.
 This toolbox provides a graphical user interface (GUI) for surface water extraction, water occurrence frequency 
 and hydroperiod analysis, time series analysis, and visualization using GEE without the user writing a single 
@@ -46,7 +46,8 @@ gap-filling of time series [@Walker2020]. Conventional use of the GEE platform r
 able to write JavaScript codes in the GEE online Code Editor or the use of Python codes using the Python 
 API to perform geospatial processing of datasets. This is sometime problematic for some researchers and 
 water resource managers who have no knowledge in programming or not used to the languages needed to 
-communicate with the GEE platform. 
+communicate with the GEE platform. This toolbox provides a simple GUI as a solution to some of the challenges 
+faced by non-programmers in utilizing the GEE platform for water resources monitoring.
 
 # Audience
 
