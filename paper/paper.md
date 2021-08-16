@@ -53,7 +53,7 @@ faced by non-programmers in utilizing the GEE platform for water resources monit
 
 The toolbox is intended for researchers, water resource managers, and planners who would 
 like to utilize the geospatial datasets and cloud computing power of the GEE platform to
-monitor changes in water resources with little to no knowledge on the use of the platform and it's 
+monitor changes in water resources with little to no knowledge on the use of the platform and its 
 coding requirements. The toolbox is currently being used by a team of civil engineering and biology researchers 
 monitoring the hydrology of wetlands under the Wetland Reserve Program (WRP) which are being monitored 
 to assess the effectiveness of wetland restoration practices implemented by the Natural Resources 
@@ -62,13 +62,15 @@ Conservation Service (NRCS) in West Tennessee and West Kentucky
 # Functionality
 
 PyGEE-SWToolbox can:
-- Retrieve  a time series of Landsat, Sentinel-1, and Sentinel-2 satellite imagery for a study area.
-- Extract surface water from all retreived satellite imagery using water extraction
+- Retrieve a time series of Landsat, Sentinel-1, and Sentinel-2 satellite imagery for a study area.
+- Extract surface water from all retrieved satellite imagery using water extraction
     indices such as NDWI [@McFEETERS1996], MNDWI [@Xu2006], AWEI [@FEYISA201423], and DSWE [@Walker2020].
-- Generate a timeseries of surface water area dynamics and export timeseries to CSV format.
-- Perform water occurency frequency and hydroperiod analysis.
-- Export retrieved satellite imagery, surface water and frequency maps to Google Drive or download to
-    to local computer for use in other GIS environments.
+- Generate a time-series of surface water area dynamics and export times-eries to CSV format.
+- Perform water occurence frequency and hydroperiod analysis.
+- Estimate water depth using digital elevation models (DEMs).
+- Visualize satellite data, computed water maps, and time-series of water dynamics. 
+- Export retrieved satellite imagery, surface water, and frequency maps to Google Drive or download them to
+    the user's local computer for use in other GIS environments.
 
 
 
