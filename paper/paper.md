@@ -40,12 +40,12 @@ applications.
 
 # Statement of need
 
-GEE has been applied in various aspects of water resource monitoring such as wetland inundation 
+The GEE platform has been applied in various aspects of water resource monitoring such as wetland inundation 
 dynamics [@Wu2019], flood monitoring [@DeVries2020], satellite-derived bathymetry [@Casal2020], and 
 gap-filling of time series [@Walker2020]. Conventional use of the GEE platform requires the user to 
 able to write JavaScript codes in the GEE online Code Editor or the use of Python codes using the Python 
-API to perform geospatial processing of datasets. This is sometime problematic for some researchers and 
-water resource managers who have no knowledge in programming or not used to the languages needed to 
+API to perform geospatial processing of datasets. This is sometimes problematic for some researchers and 
+water resource managers who have no knowledge in programming or are not used to the languages needed to 
 communicate with the GEE platform. This toolbox provides a simple GUI as a solution to some of the challenges 
 faced by non-programmers in utilizing the GEE platform for water resources monitoring.
 
