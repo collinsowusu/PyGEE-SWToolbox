@@ -54,8 +54,8 @@ faced by non-programmers in utilizing the GEE platform for water resources monit
 The toolbox is intended for researchers, water resource managers, and planners who would 
 like to utilize the geospatial datasets and cloud computing power of the GEE platform to
 monitor changes in water resources with little to no knowledge on the use of the platform and it's 
-coding requirements. The toolbox is currently being used by a team of civil engineering and biology students 
-monitoring the hydrology of wetlands under the Wetland Reserve Program (WRP) which was being monitored 
+coding requirements. The toolbox is currently being used by a team of civil engineering and biology researchers 
+monitoring the hydrology of wetlands under the Wetland Reserve Program (WRP) which are being monitored 
 to assess the effectiveness of wetland restoration practices implemented by the Natural Resources 
 Conservation Service (NRCS) in West Tennessee and West Kentucky
 
