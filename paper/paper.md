@@ -62,15 +62,20 @@ Conservation Service (NRCS) in West Tennessee and West Kentucky
 # Functionality
 
 PyGEE-SWToolbox can:
+
 - Retrieve a time series of Landsat, Sentinel-1, Sentinel-2, and National Agriculture Imagery Program (NAIP) satellite imagery for a study area.
-- Extract surface water from all retrieved satellite imagery using water extraction
-    indices such as NDWI [@McFEETERS1996], MNDWI [@Xu2006], AWEI [@FEYISA201423], and DSWE [@Walker2020].
+
+- Extract surface water from all retrieved satellite imagery using water extraction indices such as NDWI [@McFEETERS1996], MNDWI [@Xu2006], AWEI [@FEYISA201423], and DSWE [@Walker2020].
+
 - Generate a time-series of surface water area dynamics and export times-eries to CSV format.
+
 - Perform water occurence frequency and hydroperiod analysis.
+
 - Estimate water depth using surface water extent and digital elevation models (DEMs).
-- Visualize satellite data, water and depth maps, and time-series of water dynamics. 
-- Export retrieved satellite imagery, surface water, and frequency maps to Google Drive or download them to
-    the user's local computer for use in other GIS environments.
+
+- Visualize satellite data, water and depth maps, and time-series of water dynamics.
+
+- Export retrieved satellite imagery, surface water, and frequency maps to Google Drive or download them to the user's local computer for use in other GIS environments.
 
 
 
