@@ -62,6 +62,7 @@ Conservation Service (NRCS) in West Tennessee and West Kentucky
 # Functionality
 
 PyGEE-SWToolbox can:
+
 - Retrieve a time series of Landsat, Sentinel-1, Sentinel-2, and National Agriculture Imagery Program (NAIP) satellite imagery for a study area.
 
 - Extract surface water from all retrieved satellite imagery using water extraction indices such as NDWI [@McFEETERS1996], MNDWI [@Xu2006], AWEI [@FEYISA201423], and DSWE [@Walker2020].
