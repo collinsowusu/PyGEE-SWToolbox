@@ -22,6 +22,7 @@ authors:
 affiliations:
  - name: Department of Civil and Environmental Engineering, Tennessee Technological University
    index: 1
+   
  - name: Water Center, Tennessee Technological University
    index: 2
 date: 29 June 2021
