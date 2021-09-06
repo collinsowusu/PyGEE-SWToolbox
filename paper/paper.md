@@ -20,7 +20,7 @@ authors:
     orcid: 0000-0002-7746-3121
     affiliation: "1,2"
 affiliations:
- - name: Department of Civil and Environmental Engineering, Tennessee Technological University     
+ - name: Department of Civil and Environmental Engineering, Tennessee Technological University \
    index: 1
    
  - name: Water Center, Tennessee Technological University
