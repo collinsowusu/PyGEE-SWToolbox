@@ -90,5 +90,7 @@ U.S. Department of Agriculture, and The Nature Conservancy, under award number
 68-5C16-17-015. Any opinions, findings, conclusions, or recommendations 
 expressed in this publication are those of the authors and do not necessarily 
 reflect the views of the Natural Resources Conservation Service or The Nature Conservancy.
+The authors also acknowledge the funding support from the Center for the Management, Utilization, and Protection of Water Resources (TTU Water Center) at
+the Tennessee Technological University.
 
 # References
