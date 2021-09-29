@@ -1,6 +1,6 @@
 
 # PyGEE-SWToolbox
-[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5042363.svg)](https://doi.org/10.5281/zenodo.5042363)
+[![MIT License](https://img.shields.io/apm/l/atomic-design-ui.svg?)](https://github.com/tterb/atomic-design-ui/blob/master/LICENSEs) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5537938.svg)](https://doi.org/10.5281/zenodo.5537938)
 
 A Python Jupyter notebook toolbox for interactive surface water mapping and analysis using Google 
 Earth Engine.
