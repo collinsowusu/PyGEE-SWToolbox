@@ -86,6 +86,7 @@ Run the first cell which will import the GEE API and initialize it. The first ti
 require you to authenticate the GEE API using your GEE Account. Run the second cell to display the GUI 
 of the toolbox.
 
+The toolbox can also be imported into any other jupyter notebook as shown in the second cell of the provided notebook.
 Refer to the User Manual in the project directory on how to use the toolbox.
 
   
