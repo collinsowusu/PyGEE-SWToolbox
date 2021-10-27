@@ -471,3 +471,44 @@ def image_min_value(img, region=None, scale=None):
         'bestEffort':True
     }).values().get(0))
     return min_value.getInfo()
+
+def estimateDepths_FromDEM(dem, site, img_scale):
+    """Estimates water depth based on water extent and DEM elevations
+    Args:
+        dem (object): Elevation data
+        region (object): The region over which to reduce data. Defaults to the footprint of the image's first band.
+        scale (float): A nominal scale in meters of the projection to work in. Defaults to None.
+    Returns:
+        object: ee.Image
+    """
+    def wrap(img):
+        """Estimates water depth based on water extent and DEM elevations
+        Args:
+            img (object): Water mask
+        Returns:
+            object: ee.Image
+        """
+        flood = img
+        dem_mask = dem.mask(flood)
+
+        polys = flood.addBands(dem_mask).reduceToVectors(**{
+                'geometry':site,
+                'scale':img_scale,
+                'reducer':ee.Reducer.max(),
+                'eightConnected': False,
+                'geometryType':'polygon',
+                'crs': flood.projection()
+                })
+
+        polys2 = dem.reduceRegions(polys, ee.Reducer.max())
+        propNames = polys2.first().propertyNames();
+        polys2 = polys2.select(propNames, ['max_elev','system:index', 'label'])
+
+        properties = ['max_elev']
+        maxImage = polys2.filter(ee.Filter.notNull(properties))\
+                    .reduceToImage(**{'properties': properties, 'reducer': ee.Reducer.first()})
+
+        Depths = maxImage.subtract(dem_mask).rename('Depth')
+        DepthFilter = Depths.where(Depths.lt(0),0)
+        return DepthFilter.copyProperties(flood, flood.propertyNames())
+    return wrap
