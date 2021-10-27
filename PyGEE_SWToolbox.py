@@ -19,7 +19,8 @@ import numpy as np
 import eemont
 
 # import developed utilities
-import Utilities as ut
+# import Utilities as ut
+from Utilities import *
 
 # geetols: Google earth engine tools
 # https://github.com/gee-community/gee_tools
@@ -457,11 +458,13 @@ class Toolbox:
                 self.threshold_value.max = 4.0
                 self.threshold_value.step = 1.0
                 self.threshold_value.value = 4.0
+                self.threshold_dropdown.options = ['Simple']
             else:
                 self.threshold_value.min = -1.0
                 self.threshold_value.max = 1.0
                 self.threshold_value.step = 0.050
                 self.threshold_value.value = 0.0
+                self.threshold_dropdown.options = ['Simple','Otsu']
 
         self.water_indices.observe(indexSelection, 'value')
 
@@ -589,7 +592,7 @@ class Toolbox:
                 # Define study area based on user preference
                 if self.user_preference.index == 1:
                     file = self.file_selector.selected  
-                    site = ut.load_boundary(file)
+                    site = load_boundary(file)
                     self.Map.addLayer(site, {}, 'AOI')
                     self.Map.center_object(site, 12)
     #                 Map.zoom_to_object(site)
@@ -609,18 +612,18 @@ class Toolbox:
 
                 # filter image collection based on date, study area and cloud threshold(depends of datatype)
                 if imageType == 'Landsat':
-                    filtered_landsat = ut.load_Landsat(site, StartDate, EndDate, cloud_thresh)
-                    filtered_Collection = filtered_landsat.map(ut.maskLandsatclouds)
+                    filtered_landsat = load_Landsat(site, StartDate, EndDate, cloud_thresh)
+                    filtered_Collection = filtered_landsat.map(maskLandsatclouds)
                 elif imageType == 'Sentinel-2':
-                    Collection_before = ut.load_Sentinel2(site, StartDate, EndDate, cloud_thresh)
-                    filtered_Collection = Collection_before.map(ut.maskS2clouds)
+                    Collection_before = load_Sentinel2(site, StartDate, EndDate, cloud_thresh)
+                    filtered_Collection = Collection_before.map(maskS2clouds)
                 elif imageType == 'Sentinel-1':
-                    Collection_before = ut.load_Sentinel1(site, StartDate, EndDate)
+                    Collection_before = load_Sentinel1(site, StartDate, EndDate)
                     # apply speckle filter algorithm or smoothing
                     filtered_Collection = Collection_before.map(hf.perona_malik)
     #                 filtered_Collection = Collection_before.map(filtr)
                 elif imageType == 'USDA NAIP':
-                    filtered_Collection = ut.load_NAIP(site, StartDate, EndDate)
+                    filtered_Collection = load_NAIP(site, StartDate, EndDate)
 
                 # Clip images to study area
                 clipped_images = filtered_Collection.map(self.clipImages)
@@ -748,7 +751,7 @@ class Toolbox:
                                         geometry=site.geometry(),
                                         scale=img_scale,
                                         bestEffort=True)
-                        nd_threshold = ut.otsu(histogram.get('waterMask_histogram')) # get threshold from the nir band
+                        nd_threshold = otsu(histogram.get('waterMask_histogram')) # get threshold from the nir band
 
                         water_image = img.select('waterMask').gt(nd_threshold)#.rename('waterMask')  
                         water_image = water_image.copyProperties(img, ['system:time_start'])
@@ -777,7 +780,7 @@ class Toolbox:
                     bestEffort=True)
 
                     # Calculate threshold via function otsu (see before)
-                    threshold = ut.otsu(histogram.get(S1_band+'_histogram'))
+                    threshold = otsu(histogram.get(S1_band+'_histogram'))
 
                     # get watermask
                     waterMask = img.select(S1_band).lt(threshold).rename('waterMask')
@@ -800,7 +803,7 @@ class Toolbox:
                 elif imageType == 'Landsat':
                     if self.water_indices.value == 'DSWE':
                         dem = ee.Image('USGS/NED')
-                        dswe_images = ut.DSWE(filtered_landsat, dem, site)
+                        dswe_images = DSWE(filtered_landsat, dem, site)
                          # Viz parameters: classes: 0, 1, 2, 3, 4, 9
                         dswe_viz = {'min':0, 'max': 9, 'palette': ['000000', '002ba1', '6287ec', '77b800', 'c1bdb6', 
                                                                    '000000', '000000', '000000', '000000', 'ffffff']}
@@ -925,6 +928,7 @@ class Toolbox:
                     wImage = waterMasks.closest(date).first()
                     selected_sat = clipped_images.closest(date).first()
                     self.Map.addLayer(selected_sat, visParams, imageType)
+#                     self.Map.addLayer(wImage, {'palette': color_palette}, 'Water')
                     if self.water_indices.value == 'DSWE':
                         selected_DWSE = dswe_images.closest(date).first()
                         self.Map.addLayer(selected_DWSE, dswe_viz, 'DSWE')
@@ -1072,7 +1076,7 @@ class Toolbox:
                 # Filter out only images containing water pixels to avoid error in depth estimation
                 filtered_Water_Images = countImages.filter(ee.Filter.gt('pixel_count', 0))
 
-                depth_maps = filtered_Water_Images.map(ut.estimateDepths_FromDEM(dem,site,img_scale))
+                depth_maps = filtered_Water_Images.map(estimateDepths_FromDEM(dem,site,img_scale))
 
                 max_depth_map = depth_maps.max()
                 maxVal = max_depth_map.reduceRegion(ee.Reducer.max(),site, img_scale).values().get(0).getInfo()
