@@ -63,7 +63,7 @@ class Toolbox:
         #---------------------------------------------------------------------------------------------------
         # Program Title
         Title_text =  ipw.HTML(
-            "<h3 class= 'text-center'><font color = 'blue'>Python-GEE Surface Water Analysis Toolbox v.1.0.2</font>")
+            "<h3 class= 'text-center'><font color = 'blue'>Python-GEE Surface Water Analysis Toolbox v.1.0.3</font>")
         style = {'description_width': 'initial'}
 
 
