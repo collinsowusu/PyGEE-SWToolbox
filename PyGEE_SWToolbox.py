@@ -84,7 +84,7 @@ class Toolbox:
         filtering_options = ['Refined-Lee', 'Perona-Malik', 'P-median', 'Lee Sigma', 'Gamma MAP','Boxcar Convolution']
         
         
-        self.filter_dropdown = ipw.Dropdown(options = filtering_options, value = 'Gamma MAP',
+        self.filter_dropdown = ipw.Dropdown(options = filtering_options, value = 'Refined-Lee',
                                            layout=Layout(width='150px', margin='5px 0 0 15px'))
         
         self.filter_dropdown.disabled = True
