@@ -4,7 +4,7 @@ import eemont
 from geetools import tools, cloud_mask
 import geemap
 import hydrafloods as hf
-from hydrafloods import geeutils
+from hydrafloods import geeutils, corrections
 
 def DSWE(imgCollection, DEM, aoi=None):
     
@@ -265,16 +265,22 @@ def load_Sentinel1(site, StartDate, EndDate):
     returns:
         Image collection of Sentinel-1 images
     """
-	
+
     filtered_col = ee.ImageCollection('COPERNICUS/S1_GRD')\
         .filterDate(StartDate,EndDate)\
         .filter(ee.Filter.eq('instrumentMode', 'IW'))\
         .filterMetadata('transmitterReceiverPolarisation', 'equals',['VV','VH'])\
+        .filter(ee.Filter.eq('orbitProperties_pass', 'ASCENDING'))\
         .filterMetadata('resolution_meters', 'equals', 10)\
         .filterBounds(site)\
         .sort('system:time_start')
-	
     return filtered_col
+
+def slope_correction(img):
+#     orig = img
+    elev = ee.Image("MERIT/DEM/v1_0_3").select("dem")
+    corrected_image = corrections.slope_correction(img,elevation=elev)
+    return corrected_image.copyProperties(img, img.propertyNames())
 
 def load_Sentinel2(aoi, StartDate, EndDate, cloud_thresh):
     """

@@ -78,8 +78,20 @@ class Toolbox:
 
         self.Platform_dropdown = ipw.Dropdown(options = Platform_options, value = None,
                                            layout=Layout(width='150px', margin='5px 0 0 5px'))
-
+        
+        filtering_Label = ipw.Label('Speckle filter:', layout=Layout(margin='5px 0 0 5px'))
+        
+        filtering_options = ['Refined-Lee', 'Perona-Malik', 'P-median', 'Lee Sigma', 'Gamma MAP','Boxcar Convolution']
+        
+        
+        self.filter_dropdown = ipw.Dropdown(options = filtering_options, value = 'Gamma MAP',
+                                           layout=Layout(width='150px', margin='5px 0 0 15px'))
+        
+        self.filter_dropdown.disabled = True
+        
         PlatformType = HBox([dataset_Label, self.Platform_dropdown])
+        FilterType = HBox([filtering_Label, self.filter_dropdown])
+        
 
         # Study period definition
         #************************************************************************************************
@@ -108,7 +120,7 @@ class Toolbox:
         self.cloud_threshold = ipw.IntSlider(description = 'Cloud Threshold:', orientation = 'horizontal',
                                          value = 50, step = 5, style = style)
 
-        imageParameters = VBox([dataset_description, PlatformType, datePickers, self.cloud_threshold], 
+        imageParameters = VBox([dataset_description, PlatformType, FilterType, datePickers, self.cloud_threshold], 
                            layout=Layout(width='305px', border='solid 2px black'))
 
 
@@ -361,7 +373,7 @@ class Toolbox:
                     self.threshold_value.disabled = False
                     self.water_indices.options = ['NDWI','MNDWI','DSWE','AWEInsh', 'AWEIsh']
                     self.threshold_dropdown.options = ['Simple','Otsu']
-
+                    self.filter_dropdown.disabled = True
                 elif self.Platform_dropdown.value == 'Sentinel-1':
                     visParams = {'min': -25,'max': 0}
                     self.cloud_threshold.disabled = True
@@ -369,7 +381,7 @@ class Toolbox:
                     self.index_color.disabled = False
                     self.threshold_value.disabled = True
                     self.threshold_dropdown.options = ['Otsu']
-
+                    self.filter_dropdown.disabled = False
                 elif self.Platform_dropdown.value == 'Sentinel-2':
                     visParams = {'bands': ['red', 'green', 'blue'],
                       'min': 0.0,
@@ -380,7 +392,7 @@ class Toolbox:
                     self.threshold_value.disabled = False
                     self.water_indices.options = ['NDWI','MNDWI','AWEInsh', 'AWEIsh']
                     self.threshold_dropdown.options = ['Simple','Otsu']
-
+                    self.filter_dropdown.disabled = True
                 elif self.Platform_dropdown.value == 'USDA NAIP':
                     visParams = {'bands': ['R', 'G','B'],
                                 'min': 0.0,
@@ -390,6 +402,7 @@ class Toolbox:
                     self.index_color.disabled = False
                     self.water_indices.options = ['NDWI']
                     self.threshold_dropdown.options = ['Simple','Otsu']
+                    self.filter_dropdown.disabled = True
             except Exception as e:
                      print(e)
 
@@ -602,6 +615,7 @@ class Toolbox:
 
                 # get widget values
                 imageType = self.Platform_dropdown.value
+                filterType = self.filter_dropdown.value
                 StartDate = ee.Date.fromYMD(self.start_date.value.year,self.start_date.value.month,self.start_date.value.day)
                 EndDate = ee.Date.fromYMD(self.end_date.value.year,self.end_date.value.month,self.end_date.value.day)
 
@@ -620,8 +634,24 @@ class Toolbox:
                 elif imageType == 'Sentinel-1':
                     Collection_before = load_Sentinel1(site, StartDate, EndDate)
                     # apply speckle filter algorithm or smoothing
-                    filtered_Collection = Collection_before.map(hf.perona_malik)
-    #                 filtered_Collection = Collection_before.map(filtr)
+                    if filterType == 'Gamma MAP':
+                        corrected_Collection = Collection_before.map(slope_correction)
+                        filtered_Collection = corrected_Collection.map(hf.gamma_map)
+                    elif filterType == 'Refined-Lee':
+                        corrected_Collection = Collection_before.map(slope_correction)
+                        filtered_Collection = corrected_Collection.map(hf.refined_lee)
+                    elif filterType == 'Perona-Malik':
+                        corrected_Collection = Collection_before.map(slope_correction)
+                        filtered_Collection = corrected_Collection.map(hf.perona_malik)
+                    elif filterType == 'P-median':
+                        corrected_Collection = Collection_before.map(slope_correction)
+                        filtered_Collection = corrected_Collection.map(hf.p_median)
+                    elif filterType == 'Boxcar Convolution':
+                        corrected_Collection = Collection_before.map(slope_correction)
+                        filtered_Collection = corrected_Collection.map(filtr)
+                    elif filterType == 'Lee Sigma':
+#                         corrected_Collection = Collection_before.map(ut.slope_correction) # slope correction before lee_sigma fails
+                        filtered_Collection = Collection_before.map(hf.lee_sigma)
                 elif imageType == 'USDA NAIP':
                     filtered_Collection = load_NAIP(site, StartDate, EndDate)
 
