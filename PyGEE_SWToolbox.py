@@ -390,7 +390,7 @@ class Toolbox:
                     self.water_indices.disabled = False
                     self.index_color.disabled = False
                     self.threshold_value.disabled = False
-                    self.water_indices.options = ['NDWI','MNDWI','AWEInsh', 'AWEIsh']
+                    self.water_indices.options = ['NDWI','MNDWI']
                     self.threshold_dropdown.options = ['Simple','Otsu']
                     self.filter_dropdown.disabled = True
                 elif self.Platform_dropdown.value == 'USDA NAIP':
@@ -800,7 +800,7 @@ class Toolbox:
                         Image with water mask
                     """
                     # Compute histogram
-                    S1_band = 'VH'
+                    S1_band = 'VV'
                     reducers = ee.Reducer.histogram(255,2).combine(reducer2=ee.Reducer.mean(), sharedInputs=True)\
                         .combine(reducer2=ee.Reducer.variance(), sharedInputs= True)
                     histogram = img.select(S1_band).reduceRegion(
