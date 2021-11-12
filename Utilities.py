@@ -278,7 +278,7 @@ def load_Sentinel1(site, StartDate, EndDate):
 
 def slope_correction(img):
 #     orig = img
-    elev = ee.Image("MERIT/DEM/v1_0_3").select("dem")
+    elev = ee.Image("USGS/SRTMGL1_003").select("elevation")
     corrected_image = corrections.slope_correction(img,elevation=elev)
     return corrected_image.copyProperties(img, img.propertyNames())
 
