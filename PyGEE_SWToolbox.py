@@ -377,7 +377,7 @@ class Toolbox:
                 elif self.Platform_dropdown.value == 'Sentinel-1':
                     visParams = {'min': -25,'max': 0}
                     self.cloud_threshold.disabled = True
-                    self.water_indices.disabled = True
+                    self.water_indices.options = ['VV','VH']#,'NDPI','NVHI', 'NVVI']
                     self.index_color.disabled = False
                     self.threshold_value.disabled = True
                     self.threshold_dropdown.options = ['Otsu']
@@ -789,7 +789,7 @@ class Toolbox:
                     return water_image
 
                 # Function to extract water from SAR Sentinel 1 images
-                def add_S1_waterMask(img):
+                def add_S1_waterMask(band):
                     """
                     Function to extract surface water from Sentinel-1 images Otsu algorithm
 
@@ -799,23 +799,23 @@ class Toolbox:
                     returns:
                         Image with water mask
                     """
-                    # Compute histogram
-                    S1_band = 'VV'
-                    reducers = ee.Reducer.histogram(255,2).combine(reducer2=ee.Reducer.mean(), sharedInputs=True)\
-                        .combine(reducer2=ee.Reducer.variance(), sharedInputs= True)
-                    histogram = img.select(S1_band).reduceRegion(
-                    reducer=reducers,
-                    geometry=site.geometry(),
-                    scale=img_scale,
-                    bestEffort=True)
+                    def wrap(img):
+                        reducers = ee.Reducer.histogram(255,2).combine(reducer2=ee.Reducer.mean(), sharedInputs=True)\
+                            .combine(reducer2=ee.Reducer.variance(), sharedInputs= True)
+                        histogram = img.select(band).reduceRegion(
+                        reducer=reducers,
+                        geometry=site.geometry(),
+                        scale=img_scale,
+                        bestEffort=True)
 
-                    # Calculate threshold via function otsu (see before)
-                    threshold = otsu(histogram.get(S1_band+'_histogram'))
+                        # Calculate threshold via function otsu (see before)
+                        threshold = otsu(histogram.get(band+'_histogram'))
 
-                    # get watermask
-                    waterMask = img.select(S1_band).lt(threshold).rename('waterMask')
-            #             waterMask = waterMask.updateMask(waterMask) #Remove all pixels equal to 0
-                    return img.addBands(waterMask)
+                        # get watermask
+                        waterMask = img.select(band).lt(threshold).rename('waterMask')
+                #             waterMask = waterMask.updateMask(waterMask) #Remove all pixels equal to 0
+                        return img.addBands(waterMask)
+                    return wrap
 
                 def maskDSWE_Water(img):
                     nd_threshold = self.threshold_value.value+1
@@ -826,13 +826,14 @@ class Toolbox:
                     return img.select('waterMask').selfMask().copyProperties(img, ['system:time_start'])
 
                 if imageType == 'Sentinel-1':
-                    water_images = clipped_images.map(add_S1_waterMask).select('waterMask')
+                    band = self.water_indices.value
+                    water_images = clipped_images.map(add_S1_waterMask(band)).select('waterMask')
                     waterMasks = water_images.map(mask_Water)
                     visParams = {'min': 0,'max': 1, 'palette': color_palette}
                     self.Map.addLayer(waterMasks.max(), visParams, 'Water')
                 elif imageType == 'Landsat':
                     if self.water_indices.value == 'DSWE':
-                        dem = ee.Image('USGS/NED')
+                        dem = ee.Image('USGS/SRTMGL1_003')
                         dswe_images = DSWE(filtered_landsat, dem, site)
                          # Viz parameters: classes: 0, 1, 2, 3, 4, 9
                         dswe_viz = {'min':0, 'max': 9, 'palette': ['000000', '002ba1', '6287ec', '77b800', 'c1bdb6', 
