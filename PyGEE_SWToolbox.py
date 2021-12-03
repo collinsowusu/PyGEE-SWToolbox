@@ -1042,7 +1042,7 @@ class Toolbox:
                         maxPixels = int(1e13))
                     task
                 else:
-                    geemap.ee_export_image_collection(download_images, out_dir=path)
+                    export_image_collection_to_local(download_images,path,name_Pattern,date_pattern,extra,img_scale,region=site)
 
                 print('Download complete!!')
 

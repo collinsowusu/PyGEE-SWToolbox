@@ -1,10 +1,13 @@
 import ee
 import eemont
-#import geetools
 from geetools import tools, cloud_mask
 import geemap
 import hydrafloods as hf
 from hydrafloods import geeutils, corrections
+from urllib.request import urlretrieve
+import shutil
+from geetools.utils import makeName
+import os
 
 def DSWE(imgCollection, DEM, aoi=None):
     
@@ -277,10 +280,26 @@ def load_Sentinel1(site, StartDate, EndDate):
     return filtered_col
 
 def slope_correction(img):
-#     orig = img
     elev = ee.Image("USGS/SRTMGL1_003").select("elevation")
     corrected_image = corrections.slope_correction(img,elevation=elev)
     return corrected_image.copyProperties(img, img.propertyNames())
+
+def SAR_indices(img):
+    # From Huang et al. (2018), doi: 10.3390/rs10050797
+    # Polarized raio
+    PR = img.select('VH').divide(img.select('VV')).rename('PR')
+    # Normalized Difference Polarized Index (NDPI)
+    NDPI = img.normalizedDifference(['VV','VH']).rename('NDPI')
+    # Normalized VH Index (NVHI)
+    NVHI = img.expression('VH / (VV + VH)', {
+                                'VH': img.select('VH'),
+                                'VV': img.select('VV')}).rename('NVHI')
+    # Normalized VV Index (NVVI)
+    NVVI = img.expression('VV / (VV + VH)', {
+                                'VH': img.select('VH'),
+                                'VV': img.select('VV')}).rename('NVVI')
+    
+    return img.addBands([PR,NDPI,NVHI,NVVI])
 
 def load_Sentinel2(aoi, StartDate, EndDate, cloud_thresh):
     """
@@ -518,3 +537,67 @@ def estimateDepths_FromDEM(dem, site, img_scale):
         DepthFilter = Depths.where(Depths.lt(0),0)
         return DepthFilter.copyProperties(flood, flood.propertyNames())
     return wrap
+
+def local_download(img, filename, region, scale):
+    print("Generating URL ...")
+    proj = img.select(0).projection()
+    crs = proj.getInfo()['crs']
+    img = img.reproject(crs=crs,scale=scale)
+    url = ee.data.makeDownloadUrl(ee.data.getDownloadId({
+            'image': img,
+            'region': region.geometry(),
+            'filePerBand': False,
+            'format':"GEO_TIFF",
+            'maxPixels':1e13,
+            'scale':scale,
+            }))
+    print(f"Downloading data from {url}")
+    local_zip, headers = urlretrieve(url)
+    shutil.move(local_zip,filename)
+    return
+
+def export_image_collection_to_local(ee_object, out_dir, name_pattern, date_pattern, extra, scale, region=None):
+    """Exports an ImageCollection as GeoTIFFs to local drive.
+    Adapted from geemap's "ee_export_image_collection" method
+    Args:
+        ee_object (object): The ee.ImageCollection to download.
+        out_dir (str): The output directory for the exported images.
+        name_pattern (str): The file naming pattern
+        date_pattern (str): The date pattern
+        extra (dict): A dictionary of additional file naming parameters; satellite platform and type of image collection
+        scale (float, optional): A default scale to use for any bands that do not specify one; ignored if crs and crs_transform is specified. Defaults to None.
+      crs (str, optional): A default CRS string to use for any bands that do not explicitly specify one. Defaults to None.
+      region (object, optional): A polygon specifying a region to download; ignored if crs and crs_transform is specified. Defaults to None.
+    """
+
+    if not isinstance(ee_object, ee.ImageCollection):
+        print("The ee_object must be an ee.ImageCollection.")
+        return
+
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+
+    try:
+
+        count = int(ee_object.size().getInfo())
+        print(f"Total number of images: {count}\n")
+
+        for i in range(0, count):
+            image = ee.Image(ee_object.toList(count).get(i))
+            name_Pattern = name_pattern
+            date_pattern = date_pattern
+            extra = extra
+            name = makeName(image, name_Pattern, date_pattern, extra).getInfo()
+            name = name + ".tif"
+            filename = os.path.join(os.path.abspath(out_dir), name)
+            print(f"Exporting {i + 1}/{count}: {name}")
+            local_download(
+                image,
+                filename=filename,
+                region=region,
+                scale=scale
+            )
+            print("\n")
+
+    except Exception as e:
+        print(e)
