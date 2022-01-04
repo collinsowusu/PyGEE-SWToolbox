@@ -3,6 +3,7 @@ import eemont
 from geetools import tools, cloud_mask
 import geemap
 import hydrafloods as hf
+import hydrafloods.depths as hfd
 from hydrafloods import geeutils, corrections
 from urllib.request import urlretrieve
 import shutil
@@ -177,7 +178,8 @@ def DSWE(imgCollection, DEM, aoi=None):
                       (img.select('dswe').eq(2) and slope.gte(16.7)).Or            # 30% slope = 16.7°
                       (img.select('dswe').eq(1) and slope.gte(16.7)), 0);          # 30% slope = 16.7°
 
-        return img.addBands(reclass).select('dswe')
+#         return img.addBands(reclass).select('dswe')
+        return img.addBands(reclass)
 
     img_indices_all = img_indices_bit.map(convert_bin_dswe)
     dswe_Images_mosaic = tools.imagecollection.mosaicSameDay(img_indices_all)
@@ -185,7 +187,8 @@ def DSWE(imgCollection, DEM, aoi=None):
     if aoi is None:
         dswe_Images = dswe_Images_mosaic
     else:
-        dswe_Images = dswe_Images_mosaic.select('dswe').map(clipImages)
+#         dswe_Images = dswe_Images_mosaic.select('dswe').map(clipImages)
+        dswe_Images = dswe_Images_mosaic.map(clipImages)
 
     return dswe_Images
 
@@ -513,7 +516,7 @@ def estimateDepths_FromDEM(dem, site, img_scale):
         Returns:
             object: ee.Image
         """
-        flood = img
+        flood = img.select('waterMask')
         dem_mask = dem.mask(flood)
 
         polys = flood.addBands(dem_mask).reduceToVectors(**{
@@ -535,7 +538,57 @@ def estimateDepths_FromDEM(dem, site, img_scale):
 
         Depths = maxImage.subtract(dem_mask).rename('Depth')
         DepthFilter = Depths.where(Depths.lt(0),0)
-        return DepthFilter.copyProperties(flood, flood.propertyNames())
+#         return DepthFilter.copyProperties(flood, flood.propertyNames())
+        return img.addBands(DepthFilter)
+    return wrap
+
+def add_depth_variables(img):
+    orig = img
+    scaled_image = img.multiply(1000)
+    mod_green = scaled_image.select('green').log().rename('mod_green')
+    mod_swir1 = scaled_image.select('swir1').log().rename('mod_swir1')
+    stumpf = mod_green.divide(mod_swir1).rename('Stumpf')
+    return img.addBands([mod_green,mod_swir1,stumpf]).copyProperties(orig, orig.propertyNames())
+
+def RF_Depth_Estimate(rf_ee_classifier):
+    def wrap(img):
+        orig = img
+        waterMask = img.select('waterMask')
+        feature_names = ['mod_green','mod_swir1']
+        depth_map = img.select(feature_names).classify(rf_ee_classifier).rename('Depth')
+        depth_map = depth_map.mask(waterMask).selfMask()
+        return img.addBands(depth_map).copyProperties(orig, orig.propertyNames())
+    return wrap
+
+def Mod_Stumpf_Depth_Estimate(img):
+    orig = img
+    waterMask = img.select('waterMask')
+    depth_map = img.expression('(7.36996152 * Stumpf) - 6.414202728845137', {'Stumpf': img.select('Stumpf')}).rename('Depth')
+    depth_map = depth_map.mask(waterMask).selfMask()
+    return img.addBands(depth_map).copyProperties(orig, orig.propertyNames())
+
+def Mod_Lyzenga_Depth_Estimate(img):
+    orig = img
+    waterMask = img.select('waterMask')
+    depth_map = img.expression('(0.40411079 * mod_green) + (-0.65231439 *mod_swir1) + 4.364452405536028', {
+                                'mod_green': img.select('mod_green'),
+                                'mod_swir1': img.select('mod_swir1')}).rename('Depth')
+    depth_map = depth_map.mask(waterMask).selfMask()
+    return img.addBands(depth_map).copyProperties(orig, orig.propertyNames())
+
+def FwDET_Depth_Estimate(dem):
+    """Estimates depth of water based on the FwDET algorithm (Peter et al 2020 as implementd in hydrafloods)
+    Args:
+        img (ee.Image): Image containing a 'waterMask' band
+        dem (object): Elevation data
+    Returns:
+        object: ee.Image with depth band
+    """
+    def wrap(img):
+        orig = img
+        watermask = img.select('water')
+        depth_map = hfd.fwdet(watermask,dem).rename('Depth')
+        return img.addBands(depth_map).copyProperties(orig, orig.propertyNames())
     return wrap
 
 def local_download(img, filename, region, scale):
