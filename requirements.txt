@@ -8,3 +8,4 @@ ipywidgets
 pandas
 hydrafloods
 plotly
+scikit-learn
