@@ -2,7 +2,7 @@ import ee
 # Initialize the GEE API
 # try:
 #     ee.Initialize()
-# except Exception as ee:
+# except Exception as e:
 #     ee.Authenticate()
 #     ee.Initialize()
 
@@ -236,9 +236,14 @@ class Toolbox:
                                         layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
         self.elevData_options.disabled = True
         
-        self.elev_Methods = ipw.Dropdown(options=['Random Forest','Mod_Stumpf','Mod_Lyzenga','FwDET'], value='Random Forest',
+#         self.elev_Methods = ipw.Dropdown(options=['Random Forest','Mod_Stumpf','Mod_Lyzenga','FwDET'], value='Random Forest',
+#                             description='Depth method:',
+#                             layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
+        
+        self.elev_Methods = ipw.Dropdown(options=['FwDET'], value='FwDET',
                             description='Depth method:',
                             layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
+        
         self.elev_Methods.disabled = True
 
         self.userDEM = ipw.Dropdown(description='Select GEE asset:', 
@@ -352,6 +357,25 @@ class Toolbox:
         
         # variable to hold the random forest classifier
         self.rf_ee_classifier = None
+        self.WaterMasks = None
+        self.visParams = None
+        self.filtered_Collection = None
+        self.filtered_landsat = None
+        self.clipped_images = None
+        self.imageType = None
+        self.dates = None
+        self.site = None
+        self.img_scale = None
+        self.file_list = None
+        self.StartDate = None
+        self.EndDate = None
+        self.water_images = None
+        self.dswe_images = None
+        self.index_images = None
+        self.dswe_viz = None
+        self.depth_maps = None
+        self.filtered_Water_Images =  None
+        self.depthParams = None
 
         # Functions to control UI changes and parameter settings
         #****************************************************************************************************
@@ -367,12 +391,9 @@ class Toolbox:
                 None
             """
             try:
-                global img_type
-                global visParams
-                global water_index_options
 
                 if self.Platform_dropdown.value == 'Landsat':
-                    visParams = {'bands': ['red', 'green', 'blue'],
+                    self.visParams = {'bands': ['red', 'green', 'blue'],
                           'min': 0,
                           'max': 3000,
                           }
@@ -384,7 +405,7 @@ class Toolbox:
                     self.threshold_dropdown.options = ['Simple','Otsu']
                     self.filter_dropdown.disabled = True
                 elif self.Platform_dropdown.value == 'Sentinel-1':
-                    visParams = {'min': -25,'max': 0}
+                    self.visParams = {'min': -25,'max': 0}
                     self.cloud_threshold.disabled = True
                     self.water_indices.options = ['VV','VH']#,'NDPI','NVHI', 'NVVI']
                     self.index_color.disabled = False
@@ -392,7 +413,7 @@ class Toolbox:
                     self.threshold_dropdown.options = ['Otsu']
                     self.filter_dropdown.disabled = False
                 elif self.Platform_dropdown.value == 'Sentinel-2':
-                    visParams = {'bands': ['red', 'green', 'blue'],
+                    self.visParams = {'bands': ['red', 'green', 'blue'],
                       'min': 0.0,
                       'max': 3000}
                     self.cloud_threshold.disabled = False
@@ -403,7 +424,7 @@ class Toolbox:
                     self.threshold_dropdown.options = ['Simple','Otsu']
                     self.filter_dropdown.disabled = True
                 elif self.Platform_dropdown.value == 'USDA NAIP':
-                    visParams = {'bands': ['R', 'G','B'],
+                    self.visParams = {'bands': ['R', 'G','B'],
                                 'min': 0.0,
                                 'max': 255.0}
                     self.threshold_value.disabled = False
@@ -588,7 +609,7 @@ class Toolbox:
             Clipped image
         """
         orig = img
-        clipped_image = img.clip(site).copyProperties(orig, orig.propertyNames())
+        clipped_image = img.clip(self.site).copyProperties(orig, orig.propertyNames())
         return clipped_image    
 
 
@@ -605,16 +626,6 @@ class Toolbox:
         with self.feedback:
             self.feedback.clear_output()
             try:
-                global filtered_Collection
-                global filtered_landsat
-                global clipped_images
-                global imageType
-                global dates
-                global site
-                global img_scale
-                global file_list
-                global StartDate
-                global EndDate
 
                 self.fig.data = [] # clear existing plot
 
@@ -624,19 +635,19 @@ class Toolbox:
                 # Define study area based on user preference
                 if self.user_preference.index == 1:
                     file = self.file_selector.selected  
-                    site = load_boundary(file)
-                    self.Map.addLayer(site, {}, 'AOI')
-                    self.Map.center_object(site, 15)
+                    self.site = load_boundary(file)
+                    self.Map.addLayer(self,site, {}, 'AOI')
+                    self.Map.center_object(self.site, 15)
     #                 Map.zoom_to_object(site)
     #                 Map.center_object(site, 15)
                 else:
-                    site = ee.FeatureCollection(self.Map.draw_last_feature)
+                    self.site = ee.FeatureCollection(self.Map.draw_last_feature)
 
                 # get widget values
-                imageType = self.Platform_dropdown.value
+                self.imageType = self.Platform_dropdown.value
                 filterType = self.filter_dropdown.value
-                StartDate = ee.Date.fromYMD(self.start_date.value.year,self.start_date.value.month,self.start_date.value.day)
-                EndDate = ee.Date.fromYMD(self.end_date.value.year,self.end_date.value.month,self.end_date.value.day)
+                self.StartDate = ee.Date.fromYMD(self.start_date.value.year,self.start_date.value.month,self.start_date.value.day)
+                self.EndDate = ee.Date.fromYMD(self.end_date.value.year,self.end_date.value.month,self.end_date.value.day)
 
                 boxcar = ee.Kernel.circle(**{'radius':3, 'units':'pixels', 'normalize':True})
 
@@ -644,62 +655,62 @@ class Toolbox:
                     return img.convolve(boxcar)
 
                 # filter image collection based on date, study area and cloud threshold(depends of datatype)
-                if imageType == 'Landsat':
-                    filtered_landsat = load_Landsat(site, StartDate, EndDate, cloud_thresh)
-                    filtered_Collection = filtered_landsat.map(maskLandsatclouds)
-                elif imageType == 'Sentinel-2':
-                    Collection_before = load_Sentinel2(site, StartDate, EndDate, cloud_thresh)
-                    filtered_Collection = Collection_before.map(maskS2clouds)
-                elif imageType == 'Sentinel-1':
-                    Collection_before = load_Sentinel1(site, StartDate, EndDate)
+                if self.imageType == 'Landsat':
+                    self.filtered_landsat = load_Landsat(self.site, self.StartDate, self.EndDate, cloud_thresh)
+                    self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
+                elif self.imageType == 'Sentinel-2':
+                    Collection_before = load_Sentinel2(self.site, self.StartDate, self.EndDate, cloud_thresh)
+                    self.filtered_Collection = Collection_before.map(maskS2clouds)
+                elif self.imageType == 'Sentinel-1':
+                    Collection_before = load_Sentinel1(self.site, self.StartDate, self.EndDate)
                     # apply speckle filter algorithm or smoothing
                     if filterType == 'Gamma MAP':
                         corrected_Collection = Collection_before.map(slope_correction)
-                        filtered_Collection = corrected_Collection.map(hf.gamma_map)
+                        self.filtered_Collection = corrected_Collection.map(hf.gamma_map)
                     elif filterType == 'Refined-Lee':
                         corrected_Collection = Collection_before.map(slope_correction)
-                        filtered_Collection = corrected_Collection.map(hf.refined_lee)
+                        self.filtered_Collection = corrected_Collection.map(hf.refined_lee)
                     elif filterType == 'Perona-Malik':
                         corrected_Collection = Collection_before.map(slope_correction)
-                        filtered_Collection = corrected_Collection.map(hf.perona_malik)
+                        self.filtered_Collection = corrected_Collection.map(hf.perona_malik)
                     elif filterType == 'P-median':
                         corrected_Collection = Collection_before.map(slope_correction)
-                        filtered_Collection = corrected_Collection.map(hf.p_median)
+                        self.filtered_Collection = corrected_Collection.map(hf.p_median)
                     elif filterType == 'Boxcar Convolution':
                         corrected_Collection = Collection_before.map(slope_correction)
-                        filtered_Collection = corrected_Collection.map(filtr)
+                        self.filtered_Collection = corrected_Collection.map(filtr)
                     elif filterType == 'Lee Sigma':
 #                         corrected_Collection = Collection_before.map(ut.slope_correction) # slope correction before lee_sigma fails
-                        filtered_Collection = Collection_before.map(hf.lee_sigma)
-                elif imageType == 'USDA NAIP':
-                    filtered_Collection = load_NAIP(site, StartDate, EndDate)
+                        self.filtered_Collection = Collection_before.map(hf.lee_sigma)
+                elif self.imageType == 'USDA NAIP':
+                    self.filtered_Collection = load_NAIP(self.site, self.StartDate, self.EndDate)
 
                 # Clip images to study area
-                clipped_images = filtered_Collection.map(self.clipImages)
+                self.clipped_images = self.filtered_Collection.map(self.clipImages)
 
                 # Mosaic same day images
-                clipped_images = tools.imagecollection.mosaicSameDay(clipped_images)
+                self.clipped_images = tools.imagecollection.mosaicSameDay(self.clipped_images)
 
                 # Add first image in collection to Map
-                first_image = clipped_images.first()
-                if imageType == 'Sentinel-1':
-                    img_scale = first_image.select(0).projection().nominalScale().getInfo()
+                first_image = self.clipped_images.first()
+                if self.imageType == 'Sentinel-1':
+                    self.img_scale = first_image.select(0).projection().nominalScale().getInfo()
                 else:
                     bandNames = first_image.bandNames().getInfo()
-                    img_scale = first_image.select(str(bandNames[0])).projection().nominalScale().getInfo()
+                    self.img_scale = first_image.select(str(bandNames[0])).projection().nominalScale().getInfo()
 
-                self.Map.addLayer(clipped_images.first(), visParams, imageType)
+                self.Map.addLayer(self.clipped_images.first(), self.visParams, self.imageType)
 
                 # Get no. of processed images
-                no_of_images = filtered_Collection.size().getInfo()
+                no_of_images = self.filtered_Collection.size().getInfo()
 
                 # Display number of images
                 self.lbl_RetrievedImages.value = str(no_of_images)
 
                 # List of files
-                file_list = filtered_Collection.aggregate_array('system:id').getInfo()
+                self.file_list = self.filtered_Collection.aggregate_array('system:id').getInfo()
                 # display list of files
-                self.lst_files.options = file_list
+                self.lst_files.options = self.file_list
                 self.extractWater_Button.disabled = False # enable the water extraction button
                 self.download_button.disabled = False
 
@@ -720,11 +731,6 @@ class Toolbox:
         with self.feedback:
             self.feedback.clear_output()
             try:
-                global water_images
-                global dswe_images
-                global waterMasks
-                global index_images
-                global dswe_viz
 
                 color_palette = self.index_color.value       
                 # Function to extract water using NDWI or MNDWI from multispectral images
@@ -741,20 +747,20 @@ class Toolbox:
                     """
                     index_image = ee.Image(1)
                     if self.water_indices.value == 'NDWI':
-                        if imageType == 'Landsat' or imageType == 'Sentinel-2':
+                        if self.imageType == 'Landsat' or self.imageType == 'Sentinel-2':
                             bands = ['green', 'nir']
-                        elif imageType == 'USDA NAIP':
+                        elif self.imageType == 'USDA NAIP':
                             bands = ['G', 'N']
                         index_image = img.normalizedDifference(bands).rename('waterIndex')\
                             .copyProperties(img, ['system:time_start'])
 
                     elif self.water_indices.value == 'MNDWI':
-                        if imageType == 'Landsat':
+                        if self.imageType == 'Landsat':
                             bands = ['green', 'swir1']
                             index_image = img.normalizedDifference(bands).rename('waterIndex')\
                                 .copyProperties(img, ['system:time_start'])
 
-                        elif imageType == 'Sentinel-2':
+                        elif self.imageType == 'Sentinel-2':
                             # Resample the swir bands from 20m to 10m
                             resampling_bands = img.select(['swir1','swir2'])
                             img = img.resample('bilinear').reproject(**
@@ -798,12 +804,12 @@ class Toolbox:
 
                         histogram = img.select('waterIndex').reduceRegion(
                                         reducer=reducers,
-                                        geometry=site.geometry(),
-                                        scale=img_scale,
+                                        geometry=self.site.geometry(),
+                                        scale=self.img_scale,
                                         bestEffort=True)
                         nd_threshold = otsu(histogram.get('waterIndex_histogram')) # get threshold from the nir band
 
-                        water_image = img.select('waterMask').gt(nd_threshold).rename('water')  
+                        water_image = img.select('waterIndex').gt(nd_threshold).rename('water')  
                         water_image = water_image.copyProperties(img, ['system:time_start'])
 
                     return img.addBands(water_image)
@@ -824,8 +830,8 @@ class Toolbox:
                             .combine(reducer2=ee.Reducer.variance(), sharedInputs= True)
                         histogram = img.select(band).reduceRegion(
                         reducer=reducers,
-                        geometry=site.geometry(),
-                        scale=img_scale,
+                        geometry=self.site.geometry(),
+                        scale=self.img_scale,
                         bestEffort=True)
 
                         # Calculate threshold via function otsu (see before)
@@ -846,37 +852,36 @@ class Toolbox:
                     waterMask = img.select('water').selfMask().rename('waterMask').copyProperties(img, ['system:time_start'])
                     return img.addBands(waterMask)
 
-                if imageType == 'Sentinel-1':
+                if self.imageType == 'Sentinel-1':
                     band = self.water_indices.value
-                    water_images = clipped_images.map(add_S1_waterMask(band)).select('water')
-                    waterMasks = water_images.map(mask_Water)
-                    visParams = {'min': 0,'max': 1, 'palette': color_palette}
-                    self.Map.addLayer(waterMasks.select('waterMask').max(), visParams, 'Water')
-                elif imageType == 'Landsat':
+                    self.water_images = self.clipped_images.map(add_S1_waterMask(band)).select('water')
+                    Self.WaterMasks = self.water_images.map(mask_Water)
+                    self.visParams = {'min': 0,'max': 1, 'palette': color_palette}
+                    self.Map.addLayer(self.WaterMasks.select('waterMask').max(), self.visParams, 'Water')
+                elif self.imageType == 'Landsat':
                     if self.water_indices.value == 'DSWE':
                         dem = ee.Image('USGS/SRTMGL1_003')
-                        dswe_images = DSWE(filtered_landsat, dem, site)
+                        self.dswe_images = DSWE(self.filtered_landsat, dem, self.site)
                          # Viz parameters: classes: 0, 1, 2, 3, 4, 9
-                        dswe_viz = {'min':0, 'max': 9, 'palette': ['000000', '002ba1', '6287ec', '77b800', 'c1bdb6', 
+                        self.dswe_viz = {'min':0, 'max': 9, 'palette': ['000000', '002ba1', '6287ec', '77b800', 'c1bdb6', 
                                                                    '000000', '000000', '000000', '000000', 'ffffff']}
-                        water_images = dswe_images.map(maskDSWE_Water)
-                        waterMasks = water_images.map(mask_Water)
+                        self.water_images = self.dswe_images.map(maskDSWE_Water)
+                        self.WaterMasks = self.water_images.map(mask_Water)
     #                     Map.addLayer(dswe_images.max(), dswe_viz, 'DSWE')
                     else:
-                        index_images = clipped_images.map(water_index)
-                        water_images = index_images.map(water_thresholding)
-                        waterMasks = water_images.map(mask_Water)
-                    self.Map.addLayer(waterMasks.select('waterMask').max(), {'palette': color_palette}, 'Water')
+                        self.index_images = self.clipped_images.map(water_index)
+                        self.water_images = self.index_images.map(water_thresholding)
+                        self.WaterMasks = self.water_images.map(mask_Water)
+                    self.Map.addLayer(self.WaterMasks.select('waterMask').max(), {'palette': color_palette}, 'Water')
 
                 else:
-                    index_images = clipped_images.map(water_index)
-                    water_images = index_images.map(water_thresholding)
-                    waterMasks = water_images.map(mask_Water)
-                    self.Map.addLayer(waterMasks.select('waterMask').max(), {'palette': color_palette}, 'Water')
+                    self.index_images = self.clipped_images.map(water_index)
+                    self.water_images = self.index_images.map(water_thresholding)
+                    self.WaterMasks = self.water_images.map(mask_Water)
+                    self.Map.addLayer(self.WaterMasks.select('waterMask').max(), {'palette': color_palette}, 'Water')
 
                 self.water_Frequency_button.disabled = False
                 self.Depths_Button.disabled = False
-#                 self.elevData_options.disabled = False
                 self.elev_Methods.disabled = False
                 self.plot_button.disabled = False
 
@@ -913,9 +918,9 @@ class Toolbox:
 
         pixel_area = img.select('waterMask').multiply(ee.Image.pixelArea()).divide(divisor)
         img_area = pixel_area.reduceRegion(**{
-                            'geometry': site.geometry(),
+                            'geometry': self.site.geometry(),
                             'reducer': ee.Reducer.sum(),
-                            'scale': img_scale,
+                            'scale': self.img_scale,
                             'maxPixels': 1e13
                             })
 
@@ -939,13 +944,13 @@ class Toolbox:
                 global save_water_data
                 save_water_data = True
                 # Compute water areas
-                water_areas = waterMasks.map(self.calc_area)
+                water_areas = self.WaterMasks.map(self.calc_area)
                 water_stats = water_areas.aggregate_array('water_area').getInfo()
 
-                dates = waterMasks.aggregate_array('system:time_start')\
+                self.dates = self.WaterMasks.aggregate_array('system:time_start')\
                     .map(lambda d: ee.Date(d).format('YYYY-MM-dd')).getInfo()
 
-                dates_lst = [datetime.strptime(i, '%Y-%m-%d') for i in dates]
+                dates_lst = [datetime.strptime(i, '%Y-%m-%d') for i in self.dates]
                 y = [item.get('waterMask') for item in water_stats]
                 df = pd.DataFrame(list(zip(dates_lst,y)), columns=['Date','Area'])
 
@@ -978,12 +983,12 @@ class Toolbox:
                     global selected_sat
                     date = df['Date'].iloc[points.point_inds].values[0]
                     date = pd.to_datetime(str(date))
-                    selected_image = waterMasks.closest(date).first()
+                    selected_image = Self.WaterMasks.closest(date).first()
                     wImage = selected_image.select('waterMask')
-                    self.Map.addLayer(selected_image, visParams, imageType)
+                    self.Map.addLayer(selected_image, self.visParams, self.imageType)
                     if self.water_indices.value == 'DSWE':
-                        selected_DWSE = dswe_images.closest(date).first()
-                        self.Map.addLayer(selected_DWSE.select('dswe'), dswe_viz, 'DSWE')
+                        selected_DWSE = self.dswe_images.closest(date).first()
+                        self.Map.addLayer(selected_DWSE.select('dswe'), self.dswe_viz, 'DSWE')
 #                         Map.addLayer(wImage, {'palette': color_palette}, 'Water')
                     self.Map.addLayer(wImage, {'palette': color_palette}, 'Water')
 
@@ -1031,39 +1036,39 @@ class Toolbox:
                 folder = self.folder_name.value
                 name_Pattern = '{sat}_{system_date}_{imgType}'
                 date_pattern = 'YYYY-MM-dd'
-                extra = dict(sat=imageType, imgType = 'Water')
+                extra = dict(sat=self.imageType, imgType = 'Water')
                 if self.files_to_download.index == 0:
-                    download_images = clipped_images
-                    extra = dict(sat=imageType, imgType = 'Satellite')
+                    download_images = self.clipped_images
+                    extra = dict(sat=self.imageType, imgType = 'Satellite')
                 elif self.files_to_download.index == 1:
-                    download_images = water_images
-                    extra = dict(sat=imageType, imgType = 'Water')
+                    download_images = self.water_images
+                    extra = dict(sat=self.imageType, imgType = 'Water')
                 elif self.files_to_download.index == 2:
                     download_images = ee.ImageCollection([water_occurence])
                     name_Pattern = '{sat}_{start}_{end}_{imgType}'
-                    extra = dict(sat=imageType, imgType = 'Frequency', start=self.start_date.value.strftime("%x"),
+                    extra = dict(sat=self.imageType, imgType = 'Frequency', start=self.start_date.value.strftime("%x"),
                                  end=self.end_date.value.strftime("%x"))
                 elif self.files_to_download.index == 3:
-                    download_images = depth_maps
-                    extra = dict(sat=imageType, imgType = 'Depth')
+                    download_images = self.depth_maps
+                    extra = dict(sat=self.imageType, imgType = 'Depth')
                 else:
-                    download_images = dswe_images
-                    extra = dict(sat=imageType, imgType = 'DSWE')
+                    download_images = self.dswe_images
+                    extra = dict(sat=self.imageType, imgType = 'DSWE')
 
                 if self.download_location.index == 0:
                     task = geetools.batch.Export.imagecollection.toDrive(
                         collection = download_images,
                         folder = folder,
-                        region = site.geometry(),
+                        region = self.site.geometry(),
                         namePattern = name_Pattern,
-                        scale = img_scale,
+                        scale = self.img_scale,
                         datePattern=date_pattern,
                         extra = extra,
                         verbose=True,
                         maxPixels = int(1e13))
                     task
                 else:
-                    export_image_collection_to_local(download_images,path,name_Pattern,date_pattern,extra,img_scale,region=site)
+                    export_image_collection_to_local(download_images,path,name_Pattern,date_pattern,extra,self.img_scale,region=self.site)
 
                 print('Download complete!!')
 
@@ -1077,16 +1082,16 @@ class Toolbox:
             try:
                 global water_frequency
                 global water_occurence
-                water_occurence =  water_images.select('water').reduce(ee.Reducer.sum())
-                water_frequency = water_occurence.divide(water_images.size()).multiply(100)
-                Max_Water_Map = waterMasks.select('waterMask').max()
+                water_occurence =  self.water_images.select('water').reduce(ee.Reducer.sum())
+                water_frequency = water_occurence.divide(self.water_images.size()).multiply(100)
+                Max_Water_Map = self.WaterMasks.select('waterMask').max()
                 water_frequency = water_frequency.updateMask(Max_Water_Map)
-                visParams = {'min':0, 'max':100, 'palette': ['orange','yellow','blue','darkblue']}
-                self.Map.addLayer(water_frequency, visParams, 'Water Frequency')
+                self.visParams = {'min':0, 'max':100, 'palette': ['orange','yellow','blue','darkblue']}
+                self.Map.addLayer(water_frequency, self.visParams, 'Water Frequency')
 
-                colors = visParams['palette']
-                vmin = visParams['min']
-                vmax = visParams['max']
+                colors = self.visParams['palette']
+                vmin = self.visParams['min']
+                vmax = self.visParams['max']
 
                 self.Map.add_colorbar_branca(colors=colors, vmin=vmin, vmax=vmax, layer_name="Water Frequency")
             except Exception as e:
@@ -1099,16 +1104,13 @@ class Toolbox:
 
     # Function to count water pixels for each image   
     def CountWaterPixels(self, img):
-        count = img.select('waterMask').reduceRegion(ee.Reducer.sum(), site).values().get(0)
+        count = img.select('waterMask').reduceRegion(ee.Reducer.sum(), self.site).values().get(0)
         return img.set({'pixel_count': count})
 
     def calc_depths(self, b):
         with self.feedback:
             self.feedback.clear_output()
             try:
-                global depth_maps
-                global filtered_Water_Images
-                global depthParams
 
                 if self.elevData_options.value =='NED':
                     demSource = 'USGS/NED'
@@ -1120,42 +1122,42 @@ class Toolbox:
                     demSource = str(self.userDEM.value)
                     band = 'b1'
 
-                dem = ee.Image(demSource).select(band).clip(site)
+                dem = ee.Image(demSource).select(band).clip(self.site)
 
                 # get water pixel count per image
-                countImages = waterMasks.map(self.CountWaterPixels)
+                countImages = self.WaterMasks.map(self.CountWaterPixels)
 
                 # Filter out only images containing water pixels to avoid error in depth estimation
-                filtered_Water_Images = countImages.filter(ee.Filter.gt('pixel_count', 0))
+                self.filtered_Water_Images = countImages.filter(ee.Filter.gt('pixel_count', 0))
                 
                 if self.elev_Methods.value == 'Random Forest':
                     if self.rf_ee_classifier is not None:
-                        collection_with_depth_variables = waterMasks.map(add_depth_variables)
-                        depth_maps = collection_with_depth_variables.map(RF_Depth_Estimate(self.rf_ee_classifier))
+                        collection_with_depth_variables = self.WaterMasks.map(add_depth_variables)
+                        self.depth_maps = collection_with_depth_variables.map(RF_Depth_Estimate(self.rf_ee_classifier))
                     else:
                         filename = 'ML_models/Landsat_RF_model.sav'
                         feature_names = ['mod_green','mod_swir1']
                         loaded_model = pickle.load(open(filename, 'rb'))
                         trees =  ml.rf_to_strings(loaded_model,feature_names)
                         self.rf_ee_classifier = ml.strings_to_classifier(trees)
-                        collection_with_depth_variables = waterMasks.map(add_depth_variables)
-                        depth_maps = collection_with_depth_variables.map(RF_Depth_Estimate(self.rf_ee_classifier))
+                        collection_with_depth_variables = self.WaterMasks.map(add_depth_variables)
+                        self.depth_maps = collection_with_depth_variables.map(RF_Depth_Estimate(self.rf_ee_classifier))
                 elif self.elev_Methods.value == 'Mod_Stumpf':
-                    collection_with_depth_variables = waterMasks.map(add_depth_variables)
-                    depth_maps = collection_with_depth_variables.map(Mod_Stumpf_Depth_Estimate)
+                    collection_with_depth_variables = self.WaterMasks.map(add_depth_variables)
+                    self.depth_maps = collection_with_depth_variables.map(Mod_Stumpf_Depth_Estimate)
                 elif self.elev_Methods.value == 'Mod_Lyzenga':
-                    collection_with_depth_variables = waterMasks.map(add_depth_variables)
-                    depth_maps = collection_with_depth_variables.map(Mod_Lyzenga_Depth_Estimate)
+                    collection_with_depth_variables = self.WaterMasks.map(add_depth_variables)
+                    self.depth_maps = collection_with_depth_variables.map(Mod_Lyzenga_Depth_Estimate)
                 else:
-                    depth_maps = filtered_Water_Images.map(FwDET_Depth_Estimate(dem))
+                    self.depth_maps = self.filtered_Water_Images.map(FwDET_Depth_Estimate(dem))
 
-                max_depth_map = depth_maps.select('Depth').max()
-                maxVal = max_depth_map.reduceRegion(ee.Reducer.max(),site, img_scale).values().get(0).getInfo()
+                max_depth_map = self.depth_maps.select('Depth').max()
+                maxVal = max_depth_map.reduceRegion(ee.Reducer.max(),self.site, self.img_scale).values().get(0).getInfo()
 
-                depthParams = {'min':0, 'max':round(maxVal,1), 'palette': ['1400f7','00f4e8','f4f000','f40000','960424']}
+                self.depthParams = {'min':0, 'max':round(maxVal,1), 'palette': ['1400f7','00f4e8','f4f000','f40000','960424']}
                 #['006633', 'E5FFCC', '662A00', 'D8D8D8', 'F5F5F5']
-                self.Map.addLayer(max_depth_map, depthParams, 'Depth')
-                colors = depthParams['palette']
+                self.Map.addLayer(max_depth_map, self.depthParams, 'Depth')
+                colors = self.depthParams['palette']
                 self.Map.add_colorbar_branca(colors=colors, vmin=0, vmax=round(maxVal,1), layer_name='Depth')
                 self.depth_plot_button.disabled = False # enable depth plotting
 
@@ -1178,10 +1180,10 @@ class Toolbox:
                     point = ee.Geometry.Point(floated_xy)
                     self.Map.addLayer(point, {}, 'Depth Point')
 
-                ts_1 = depth_maps.getTimeSeriesByRegion(geometry = point,
+                ts_1 = self.depth_maps.getTimeSeriesByRegion(geometry = point,
                                           bands = ['Depth'],
                                           reducer = [ee.Reducer.mean()],
-                                          scale = img_scale)
+                                          scale = self.img_scale)
 
                 depths_df = geemap.ee_to_pandas(ts_1)
                 depths_df[depths_df == -9999] = np.nan
@@ -1216,11 +1218,11 @@ class Toolbox:
                     global selected_sat
                     date = depths_df['date'].iloc[points.point_inds].values[0]
                     date = pd.to_datetime(str(date))
-                    selected_image = depth_maps.closest(date)
+                    selected_image = self.depth_maps.closest(date)
                     wImage = selected_image.select('waterMask')
 #                     selected_sat = clipped_images.closest(date).first()
                     depthImage = selected_image.select('Depth')
-                    self.Map.addLayer(selected_image, visParams, imageType)
+                    self.Map.addLayer(selected_image, self.visParams, self.imageType)
                     self.Map.addLayer(wImage, {'palette': color_palette}, 'Water')
                     self.Map.addLayer(depthImage, depthParams, 'Depth')
 
