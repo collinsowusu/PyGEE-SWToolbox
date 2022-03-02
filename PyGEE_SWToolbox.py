@@ -855,11 +855,7 @@ class Toolbox:
                 if self.imageType == 'Sentinel-1':
                     band = self.water_indices.value
                     self.water_images = self.clipped_images.map(add_S1_waterMask(band)).select('water')
-<<<<<<< HEAD
                     self.WaterMasks = self.water_images.map(mask_Water)
-=======
-                    Self.WaterMasks = self.water_images.map(mask_Water)
->>>>>>> ed572bdc14b667139547388c269793ef8fe45731
                     self.visParams = {'min': 0,'max': 1, 'palette': color_palette}
                     self.Map.addLayer(self.WaterMasks.select('waterMask').max(), self.visParams, 'Water')
                 elif self.imageType == 'Landsat':
@@ -987,11 +983,7 @@ class Toolbox:
                     global selected_sat
                     date = df['Date'].iloc[points.point_inds].values[0]
                     date = pd.to_datetime(str(date))
-<<<<<<< HEAD
                     selected_image = self.WaterMasks.closest(date).first()
-=======
-                    selected_image = Self.WaterMasks.closest(date).first()
->>>>>>> ed572bdc14b667139547388c269793ef8fe45731
                     wImage = selected_image.select('waterMask')
                     self.Map.addLayer(selected_image, self.visParams, self.imageType)
                     if self.water_indices.value == 'DSWE':
