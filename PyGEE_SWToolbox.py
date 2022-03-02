@@ -359,6 +359,7 @@ class Toolbox:
         self.rf_ee_classifier = None
         self.WaterMasks = None
         self.visParams = None
+        self.freqParams = None
         self.filtered_Collection = None
         self.filtered_landsat = None
         self.clipped_images = None
@@ -1086,12 +1087,12 @@ class Toolbox:
                 water_frequency = water_occurence.divide(self.water_images.size()).multiply(100)
                 Max_Water_Map = self.WaterMasks.select('waterMask').max()
                 water_frequency = water_frequency.updateMask(Max_Water_Map)
-                self.visParams = {'min':0, 'max':100, 'palette': ['orange','yellow','blue','darkblue']}
-                self.Map.addLayer(water_frequency, self.visParams, 'Water Frequency')
+                self.freqParams = {'min':0, 'max':100, 'palette': ['orange','yellow','blue','darkblue']}
+                self.Map.addLayer(water_frequency, self.freqParams, 'Water Frequency')
 
-                colors = self.visParams['palette']
-                vmin = self.visParams['min']
-                vmax = self.visParams['max']
+                colors = self.freqParams['palette']
+                vmin = self.freqParams['min']
+                vmax = self.freqParams['max']
 
                 self.Map.add_colorbar_branca(colors=colors, vmin=vmin, vmax=vmax, layer_name="Water Frequency")
             except Exception as e:
