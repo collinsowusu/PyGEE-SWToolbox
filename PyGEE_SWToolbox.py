@@ -637,7 +637,7 @@ class Toolbox:
                 if self.user_preference.index == 1:
                     file = self.file_selector.selected  
                     self.site = load_boundary(file)
-                    self.Map.addLayer(self,site, {}, 'AOI')
+                    self.Map.addLayer(self.site, {}, 'AOI')
                     self.Map.center_object(self.site, 15)
     #                 Map.zoom_to_object(site)
     #                 Map.center_object(site, 15)
