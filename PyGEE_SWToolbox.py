@@ -75,7 +75,7 @@ class Toolbox:
 
         dataset_Label = ipw.Label('Select Dataset:', layout=Layout(margin='5px 0 0 5px')) #top right bottom left
 
-        Platform_options = ['Landsat', 'Sentinel-1', 'Sentinel-2', 'USDA NAIP' ]
+        Platform_options = ['Landsat-Collection 1', 'Landsat-Collection 2','Sentinel-1', 'Sentinel-2', 'USDA NAIP' ]
 
         self.Platform_dropdown = ipw.Dropdown(options = Platform_options, value = None,
                                            layout=Layout(width='150px', margin='5px 0 0 5px'))
@@ -393,7 +393,7 @@ class Toolbox:
             """
             try:
 
-                if self.Platform_dropdown.value == 'Landsat':
+                if self.Platform_dropdown.value == 'Landsat-Collection 1':
                     self.visParams = {'bands': ['red', 'green', 'blue'],
                           'min': 0,
                           'max': 3000,
@@ -405,6 +405,19 @@ class Toolbox:
                     self.water_indices.options = ['NDWI','MNDWI','DSWE','AWEInsh', 'AWEIsh']
                     self.threshold_dropdown.options = ['Simple','Otsu']
                     self.filter_dropdown.disabled = True
+                elif self.Platform_dropdown.value == 'Landsat-Collection 2':
+                    self.visParams = {'bands': ['red', 'green', 'blue'],
+                          'min': 0,
+                          'max': 0.3,
+                          }
+                    self.cloud_threshold.disabled = False
+                    self.water_indices.disabled = False
+                    self.index_color.disabled = False
+                    self.threshold_value.disabled = False
+                    self.water_indices.options = ['NDWI','MNDWI','DSWE','AWEInsh', 'AWEIsh']
+                    self.threshold_dropdown.options = ['Simple','Otsu']
+                    self.filter_dropdown.disabled = True
+
                 elif self.Platform_dropdown.value == 'Sentinel-1':
                     self.visParams = {'min': -25,'max': 0}
                     self.cloud_threshold.disabled = True
@@ -656,8 +669,11 @@ class Toolbox:
                     return img.convolve(boxcar)
 
                 # filter image collection based on date, study area and cloud threshold(depends of datatype)
-                if self.imageType == 'Landsat':
-                    self.filtered_landsat = load_Landsat(self.site, self.StartDate, self.EndDate, cloud_thresh)
+                if self.imageType == 'Landsat-Collection 1':
+                    self.filtered_landsat = load_Landsat_Coll_1(self.site, self.StartDate, self.EndDate, cloud_thresh)
+                    self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
+                elif self.imageType == 'Landsat-Collection 2':
+                    self.filtered_landsat = load_Landsat_Coll_2(self.site, self.StartDate, self.EndDate, cloud_thresh)
                     self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
                 elif self.imageType == 'Sentinel-2':
                     Collection_before = load_Sentinel2(self.site, self.StartDate, self.EndDate, cloud_thresh)
@@ -681,7 +697,7 @@ class Toolbox:
                         corrected_Collection = Collection_before.map(slope_correction)
                         self.filtered_Collection = corrected_Collection.map(filtr)
                     elif filterType == 'Lee Sigma':
-#                         corrected_Collection = Collection_before.map(ut.slope_correction) # slope correction before lee_sigma fails
+    #                         corrected_Collection = Collection_before.map(ut.slope_correction) # slope correction before lee_sigma fails
                         self.filtered_Collection = Collection_before.map(hf.lee_sigma)
                 elif self.imageType == 'USDA NAIP':
                     self.filtered_Collection = load_NAIP(self.site, self.StartDate, self.EndDate)
@@ -748,7 +764,7 @@ class Toolbox:
                     """
                     index_image = ee.Image(1)
                     if self.water_indices.value == 'NDWI':
-                        if self.imageType == 'Landsat' or self.imageType == 'Sentinel-2':
+                        if self.imageType == 'Landsat-Collection 1' or self.imageType == 'Landsat-Collection 2' or self.imageType == 'Sentinel-2':
                             bands = ['green', 'nir']
                         elif self.imageType == 'USDA NAIP':
                             bands = ['G', 'N']
@@ -756,7 +772,7 @@ class Toolbox:
                             .copyProperties(img, ['system:time_start'])
 
                     elif self.water_indices.value == 'MNDWI':
-                        if self.imageType == 'Landsat':
+                        if self.imageType == 'Landsat-Collection 1' or self.imageType == 'Landsat-Collection 2':
                             bands = ['green', 'swir1']
                             index_image = img.normalizedDifference(bands).rename('waterIndex')\
                                 .copyProperties(img, ['system:time_start'])
@@ -765,9 +781,9 @@ class Toolbox:
                             # Resample the swir bands from 20m to 10m
                             resampling_bands = img.select(['swir1','swir2'])
                             img = img.resample('bilinear').reproject(**
-                                      {'crs': resampling_bands.projection().crs(),
+                                        {'crs': resampling_bands.projection().crs(),
                                         'scale':10
-                                      })
+                                        })
                             bands = ['green', 'swir1']
                             index_image = img.normalizedDifference(bands).rename('waterIndex')\
                                 .copyProperties(img, ['system:time_start'])
@@ -859,13 +875,13 @@ class Toolbox:
                     self.WaterMasks = self.water_images.map(mask_Water)
                     self.visParams = {'min': 0,'max': 1, 'palette': color_palette}
                     self.Map.addLayer(self.WaterMasks.select('waterMask').max(), self.visParams, 'Water')
-                elif self.imageType == 'Landsat':
+                elif self.imageType == 'Landsat-Collection 1' or self.imageType == 'Landsat-Collection 2':
                     if self.water_indices.value == 'DSWE':
                         dem = ee.Image('USGS/SRTMGL1_003')
                         self.dswe_images = DSWE(self.filtered_landsat, dem, self.site)
-                         # Viz parameters: classes: 0, 1, 2, 3, 4, 9
+                            # Viz parameters: classes: 0, 1, 2, 3, 4, 9
                         self.dswe_viz = {'min':0, 'max': 9, 'palette': ['000000', '002ba1', '6287ec', '77b800', 'c1bdb6', 
-                                                                   '000000', '000000', '000000', '000000', 'ffffff']}
+                                                                    '000000', '000000', '000000', '000000', 'ffffff']}
                         self.water_images = self.dswe_images.map(maskDSWE_Water)
                         self.WaterMasks = self.water_images.map(mask_Water)
     #                     Map.addLayer(dswe_images.max(), dswe_viz, 'DSWE')
@@ -1087,7 +1103,7 @@ class Toolbox:
                 water_frequency = water_occurence.divide(self.water_images.size()).multiply(100)
                 Max_Water_Map = self.WaterMasks.select('waterMask').max()
                 water_frequency = water_frequency.updateMask(Max_Water_Map)
-                self.freqParams = {'min':0, 'max':100, 'palette': ['orange','yellow','blue','darkblue']}
+                self.freqParams = {'min':0, 'max':100, 'palette': ['white','lightblue','blue','darkblue']}
                 self.Map.addLayer(water_frequency, self.freqParams, 'Water Frequency')
 
                 colors = self.freqParams['palette']
@@ -1225,7 +1241,7 @@ class Toolbox:
                     depthImage = selected_image.select('Depth')
                     self.Map.addLayer(selected_image, self.visParams, self.imageType)
                     self.Map.addLayer(wImage, {'palette': color_palette}, 'Water')
-                    self.Map.addLayer(depthImage, depthParams, 'Depth')
+                    self.Map.addLayer(depthImage, self.depthParams, 'Depth')
 
                 scatter.on_click(update_point)
 

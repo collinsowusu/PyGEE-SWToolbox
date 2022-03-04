@@ -192,7 +192,92 @@ def DSWE(imgCollection, DEM, aoi=None):
 
     return dswe_Images
 
-def load_Landsat(aoi, StartDate, EndDate, cloud_thresh):
+
+def load_Landsat_Coll_2(aoi, StartDate, EndDate, cloud_thresh):
+    """
+    Function to retrieve and filter Landsat images
+
+    args:
+        aoi: region of interest
+        StartDate: Starting date to filter data
+        EndDate: End date to filter data
+        cloud_thresh: Threshold for filtering cloudy images
+
+    returns:
+        Image collection of Landsat images
+    """
+    # Define Landsat surface reflectance bands
+    sensor_band_dict = ee.Dictionary({
+        'l8': ee.List([1, 2, 3, 4, 5, 6, 17]),
+        'l7': ee.List([0, 1, 2, 3, 4, 5, 17]),
+        'l5': ee.List([0, 1, 2, 3, 4, 5, 17]),
+        'l4': ee.List([0, 1, 2, 3, 4, 5, 17])
+    })
+    # Sensor band names corresponding to selected band numbers
+    bandNames = ee.List(['blue', 'green', 'red', 'nir',
+                        'swir1', 'swir2', 'pixel_qa'])
+
+    # Apply scaling factors
+    # def applyScaleFactors(img):
+    #     orig = img
+    #     qa = img.select('pixel_qa')
+    #     opticalBands_scaled = img.select(
+    #         ['blue', 'green', 'red', 'nir', 'swir1', 'swir2']).multiply(0.0000275).add(-0.2)
+    #     return opticalBands_scaled.addBands(qa).copyProperties(orig, orig.propertyNames())
+    
+    def applyScaleFactors(img):
+        orig = img
+        qa = img.select('pixel_qa')
+        opticalBands_scaled = img.select(['blue', 'green', 'red', 'nir', 'swir1', 'swir2']).multiply(0.0000275).add(-0.2)
+        return img.addBands(opticalBands_scaled, None, True).addBands(qa, None, True).copyProperties(orig, orig.propertyNames())
+
+    # ------------------------------------------------------
+    # Landsat 4 - Data availability Aug 22, 1982 - Dec 14, 1993
+    ls4 = ee.ImageCollection('LANDSAT/LT04/C02/T1_L2') \
+        .filterBounds(aoi.geometry()) \
+        .select(sensor_band_dict.get('l4'), bandNames)
+
+    # Landsat 5 - Data availability Jan 1, 1984 - May 5, 2012
+    ls5 = ee.ImageCollection('LANDSAT/LT05/C02/T1_L2') \
+        .filterBounds(aoi.geometry()) \
+        .select(sensor_band_dict.get('l5'), bandNames)
+
+    # Landsat 7 - Data availability Jan 1, 1999 - Aug 9, 2016
+    # SLC-off after 31 May 2003
+    ls7 = ee.ImageCollection('LANDSAT/LE07/C02/T1_L2') \
+        .filterDate('1999-01-01', '2003-05-31') \
+        .filterBounds(aoi.geometry()) \
+        .select(sensor_band_dict.get('l7'), bandNames)
+
+    # Post SLC-off; fill the LS 5 gap
+    # -------------------------------------------------------
+    # Landsat 7 - Data availability Jan 1, 1999 - Aug 9, 2016
+    # SLC-off after 31 May 2003
+    ls7_2 = ee.ImageCollection('LANDSAT/LE07/C02/T1_L2') \
+        .filterDate('2012-05-05', '2014-04-11') \
+        .filterBounds(aoi.geometry()) \
+        .select(sensor_band_dict.get('l7'), bandNames)
+
+    # --------------------------------------------------------
+    # Landsat 8 - Data availability Apr 11, 2014 - present
+    ls8 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2') \
+        .filterBounds(aoi.geometry()) \
+        .select(sensor_band_dict.get('l8'), bandNames)
+
+    # Merge landsat collections
+    l4578 = ee.ImageCollection(ls4
+                               .merge(ls5)
+                               .merge(ls7)
+                               .merge(ls7_2)
+                               .merge(ls8).sort('system:time_start')) \
+        .filterDate(StartDate, EndDate)\
+        .filter(ee.Filter.lt('CLOUD_COVER', cloud_thresh))
+
+    l4578_scaled = l4578.map(applyScaleFactors)
+
+    return l4578_scaled
+    
+def load_Landsat_Coll_1(aoi, StartDate, EndDate, cloud_thresh):
         
     """
     Function to retrieve and filter Landsat images
