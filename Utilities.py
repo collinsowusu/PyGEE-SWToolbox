@@ -477,11 +477,20 @@ def maskLandsatclouds(image):
     """
     orig = image
     qa = image.select('pixel_qa')
-    #cloudsShadowBitMask = 1 << 3
+    cloudsShadowBitMask = 1 << 3
     cloudsBitMask = 1 << 4
-    mask = qa.bitwiseAnd(cloudsBitMask).eq(0) #\
-    #.And(qa.bitwiseAnd(cloudsBitMask).eq(0))
+    mask = qa.bitwiseAnd(cloudsBitMask).eq(0) \
+    .And(qa.bitwiseAnd(cloudsBitMask).eq(0))
     return (image.updateMask(mask).copyProperties(orig, orig.propertyNames()))
+
+def cloudMaskL457(image):
+    orig = image
+    qa = image.select('pixel_qa')
+    # If the cloud bit (5) is set and the cloud confidence (7) is high
+    # or the cloud shadow bit is set (3), then it's a bad pixel.
+    cloud = qa.bitwiseAnd(1 << 5).And(qa.bitwiseAnd(1 << 7)).Or(qa.bitwiseAnd(1 << 3))
+    mask2 = image.mask().reduce(ee.Reducer.min())
+    return (image.updateMask(cloud.Not()).updateMask(mask2).copyProperties(orig, orig.propertyNames()))
 
 def compute_histogram(img,aoi,img_scale):
     
@@ -614,18 +623,57 @@ def estimateDepths_FromDEM(dem, site, img_scale):
                 })
 
         polys2 = dem.reduceRegions(polys, ee.Reducer.max())
-        propNames = polys2.first().propertyNames();
-        polys2 = polys2.select(propNames, ['max_elev','system:index', 'label'])
 
-        properties = ['max_elev']
+        properties = ['max'] # property for creating max image
         maxImage = polys2.filter(ee.Filter.notNull(properties))\
                     .reduceToImage(**{'properties': properties, 'reducer': ee.Reducer.first()})
 
         Depths = maxImage.subtract(dem_mask).rename('Depth')
         DepthFilter = Depths.where(Depths.lt(0),0)
-#         return DepthFilter.copyProperties(flood, flood.propertyNames())
         return img.addBands(DepthFilter)
     return wrap
+
+# def estimateDepths_Experimental(dem, site, img_scale):
+#     """Estimates water depth based on water extent and DEM elevations
+#     Args:
+#         dem (object): Elevation data
+#         region (object): The region over which to reduce data. Defaults to the footprint of the image's first band.
+#         scale (float): A nominal scale in meters of the projection to work in. Defaults to None.
+#     Returns:
+#         object: ee.Image
+#     """
+#     def wrap(img):
+#         """Estimates water depth based on water extent and DEM elevations
+#         Args:
+#             img (object): Water mask
+#         Returns:
+#             object: ee.Image
+#         """
+#         flood = img.select('waterMask')
+#         watermap_edge = (flood.selfMask().unmask(-999).focal_min(img_scale, "square", "meters").eq(-999))
+#         watermap_edge = watermap_edge.updateMask(flood.unmask(0))
+#         watermap_edge = watermap_edge.selfMask()
+
+#         edge_Elevations = dem.updateMask(watermap_edge)
+#         mean_Elev = ee.Number(edge_Elevations.reduceRegion(**{
+#                             'reducer': ee.Reducer.mean(),
+#                             'geometry': site,
+#                             'scale': img_scale,
+#                             'maxPixels': 1e12
+#                             }).values().get(0)).getInfo()
+
+#         dem_mask = dem.mask(flood) # extract DEM values of the flooded area
+
+#         mean_Elev_Image = ee.Image(mean_Elev)
+        
+#         maxImage = polys2.filter(ee.Filter.notNull(properties))\
+#             .reduceToImage(**{'properties': properties, 'reducer': ee.Reducer.first()})
+
+#         Depths = maxImage.subtract(dem_mask).rename('Depth')
+#         DepthFilter = Depths.where(Depths.lt(0), 0)
+# #         return DepthFilter.copyProperties(flood, flood.propertyNames())
+#         return img.addBands(DepthFilter)
+#     return wrap
 
 def add_depth_variables(img):
     orig = img

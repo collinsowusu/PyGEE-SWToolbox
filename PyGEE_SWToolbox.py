@@ -234,13 +234,13 @@ class Toolbox:
 
         self.elevData_options = ipw.Dropdown(options=['NED','SRTM','User DEM'], value='NED', description='Elev. Dataset:',
                                         layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
-        self.elevData_options.disabled = True
+        self.elevData_options.disabled = False
         
 #         self.elev_Methods = ipw.Dropdown(options=['Random Forest','Mod_Stumpf','Mod_Lyzenga','FwDET'], value='Random Forest',
 #                             description='Depth method:',
 #                             layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
         
-        self.elev_Methods = ipw.Dropdown(options=['FwDET'], value='FwDET',
+        self.elev_Methods = ipw.Dropdown(options=['Experimental','FwDET'], value='FwDET',
                             description='Depth method:',
                             layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
         
@@ -397,6 +397,7 @@ class Toolbox:
                     self.visParams = {'bands': ['red', 'green', 'blue'],
                           'min': 0,
                           'max': 3000,
+                          'gamma':1.4
                           }
                     self.cloud_threshold.disabled = False
                     self.water_indices.disabled = False
@@ -535,7 +536,7 @@ class Toolbox:
         self.threshold_dropdown.observe(thresholdSelection, 'value')
         
         def depthMethodSelection(change):
-            if self.elev_Methods.value == 'FwDET':
+            if self.elev_Methods.value == 'FwDET' or self.elev_Methods.value == 'Experimental':
                 self.elevData_options.disabled = False
             else:
                 self.elevData_options.disabled = True
@@ -651,9 +652,7 @@ class Toolbox:
                     file = self.file_selector.selected  
                     self.site = load_boundary(file)
                     self.Map.addLayer(self.site, {}, 'AOI')
-                    self.Map.center_object(self.site, 15)
-    #                 Map.zoom_to_object(site)
-    #                 Map.center_object(site, 15)
+                    self.Map.center_object(self.site)
                 else:
                     self.site = ee.FeatureCollection(self.Map.draw_last_feature)
 
@@ -671,7 +670,8 @@ class Toolbox:
                 # filter image collection based on date, study area and cloud threshold(depends of datatype)
                 if self.imageType == 'Landsat-Collection 1':
                     self.filtered_landsat = load_Landsat_Coll_1(self.site, self.StartDate, self.EndDate, cloud_thresh)
-                    self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
+#                     self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
+                    self.filtered_Collection = self.filtered_landsat.map(cloudMaskL457)
                 elif self.imageType == 'Landsat-Collection 2':
                     self.filtered_landsat = load_Landsat_Coll_2(self.site, self.StartDate, self.EndDate, cloud_thresh)
                     self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
@@ -1058,7 +1058,7 @@ class Toolbox:
                     download_images = self.clipped_images
                     extra = dict(sat=self.imageType, imgType = 'Satellite')
                 elif self.files_to_download.index == 1:
-                    download_images = self.water_images
+                    download_images = self.WaterMasks.select('waterMask')
                     extra = dict(sat=self.imageType, imgType = 'Water')
                 elif self.files_to_download.index == 2:
                     download_images = ee.ImageCollection([water_occurence])
@@ -1165,8 +1165,10 @@ class Toolbox:
                 elif self.elev_Methods.value == 'Mod_Lyzenga':
                     collection_with_depth_variables = self.WaterMasks.map(add_depth_variables)
                     self.depth_maps = collection_with_depth_variables.map(Mod_Lyzenga_Depth_Estimate)
-                else:
+                elif self.elev_Methods.value == 'FwDET':
                     self.depth_maps = self.filtered_Water_Images.map(FwDET_Depth_Estimate(dem))
+                else:
+                    self.depth_maps = self.filtered_Water_Images.map(estimateDepths_FromDEM(dem, self.site, self.img_scale))
 
                 max_depth_map = self.depth_maps.select('Depth').max()
                 maxVal = max_depth_map.reduceRegion(ee.Reducer.max(),self.site, self.img_scale).values().get(0).getInfo()
