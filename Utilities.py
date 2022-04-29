@@ -208,6 +208,7 @@ def load_Landsat_Coll_2(aoi, StartDate, EndDate, cloud_thresh):
     """
     # Define Landsat surface reflectance bands
     sensor_band_dict = ee.Dictionary({
+        'l9': ee.List([1, 2, 3, 4, 5, 6, 17]),
         'l8': ee.List([1, 2, 3, 4, 5, 6, 17]),
         'l7': ee.List([0, 1, 2, 3, 4, 5, 17]),
         'l5': ee.List([0, 1, 2, 3, 4, 5, 17]),
@@ -263,19 +264,26 @@ def load_Landsat_Coll_2(aoi, StartDate, EndDate, cloud_thresh):
     ls8 = ee.ImageCollection('LANDSAT/LC08/C02/T1_L2') \
         .filterBounds(aoi.geometry()) \
         .select(sensor_band_dict.get('l8'), bandNames)
+    
+    # --------------------------------------------------------
+    # Landsat 9 - Data availability Apr 11, 2014 - present
+    ls9 = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2') \
+        .filterBounds(aoi.geometry()) \
+        .select(sensor_band_dict.get('l9'), bandNames)
 
     # Merge landsat collections
-    l4578 = ee.ImageCollection(ls4
+    l45789 = ee.ImageCollection(ls4
                                .merge(ls5)
                                .merge(ls7)
                                .merge(ls7_2)
-                               .merge(ls8).sort('system:time_start')) \
+                               .merge(ls8)
+                               .merge(ls9).sort('system:time_start')) \
         .filterDate(StartDate, EndDate)\
         .filter(ee.Filter.lt('CLOUD_COVER', cloud_thresh))
 
-    l4578_scaled = l4578.map(applyScaleFactors)
+    l45789_scaled = l45789.map(applyScaleFactors)
 
-    return l4578_scaled
+    return l45789_scaled
     
 def load_Landsat_Coll_1(aoi, StartDate, EndDate, cloud_thresh):
         
