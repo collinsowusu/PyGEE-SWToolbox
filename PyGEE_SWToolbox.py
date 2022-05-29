@@ -873,8 +873,8 @@ class Toolbox:
                     band = self.water_indices.value
                     self.water_images = self.clipped_images.map(add_S1_waterMask(band)).select('water')
                     self.WaterMasks = self.water_images.map(mask_Water)
-                    self.visParams = {'min': 0,'max': 1, 'palette': color_palette}
-                    self.Map.addLayer(self.WaterMasks.select('waterMask').max(), self.visParams, 'Water')
+                    # self.visParams = {'min': 0,'max': 1, 'palette': color_palette}
+                    self.Map.addLayer(self.WaterMasks.select('waterMask').max(), {'palette': color_palette}, 'Water')
                 elif self.imageType == 'Landsat-Collection 1' or self.imageType == 'Landsat-Collection 2':
                     if self.water_indices.value == 'DSWE':
                         dem = ee.Image('USGS/SRTMGL1_003')
