@@ -56,7 +56,7 @@ Create a conda Python environment and install Jupyter notebook with the followin
 (where SWToolbox is the name of the environment which can be changed to a user-preferred name):
 
 ``` 
-  conda create -n SWToolbox python=3.8
+  conda create -n SWToolbox python=3.9
   conda activate SWToolbox
   conda install -c conda-forge notebook 
 ```
