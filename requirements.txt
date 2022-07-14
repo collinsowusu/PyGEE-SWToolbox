@@ -1,4 +1,4 @@
-earthengine_api>=0.1.230
+earthengine_api>=0.1.304
 eemont
 geemap
 geetools
