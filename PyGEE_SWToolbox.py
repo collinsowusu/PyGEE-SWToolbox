@@ -4,7 +4,7 @@ import ee
 #     ee.Initialize()
 # except Exception as e:
 #     ee.Authenticate()
-#     ee.Initialize()
+ee.Initialize()
 
 # geemap:A Python package for interactive mapping with Google Earth Engine, ipyleaflet, and ipywidgets
 # Documentation: https://geemap.org
@@ -265,12 +265,17 @@ class Toolbox:
         #***************************************************************************************************
         lbl_Area_Plotting = ipw.HTML(value = f"<b><font color='blue'>{'Surface Water Area Computation:'}</b>")
         self.area_unit = ipw.Dropdown(options = ['Square m','Square Km', 'Hectares', 'Acre'], value = 'Square m',
-                                    description = 'Unit for water surface area:', style=style,
-                                    tooltip='Select unit for areas')
+                                    description = 'Unit of area:', style=style, tooltip='Select unit for areas', layout=Layout(width='200px'))
 
         self.plot_button = ipw.Button(description = 'Compute and Plot Areas', tooltip='Click to plot graph', button_style = 'info',
                                 layout=Layout(width='170px', margin='10 0 0 200px', border='solid 2px black'))
         self.plot_button.disabled = True
+        lbl_Volume_Plotting = ipw.HTML(value = f"<b><font color='blue'>{'Water Volume Computation:'}</b>")
+        self.vol_unit = ipw.Dropdown(options = ['Cubic m','Cubic ft', 'Litres', 'ac-ft'], value = 'ac-ft',
+                                    description = 'Unit of volume:', style=style, tooltip='Select unit for volumes', layout=Layout(width='200px'))
+        self.volume_button = ipw.Button(description = 'Compute Volumes', tooltip='Click to plot volumes', button_style = 'info',
+                                layout=Layout(width='170px', margin='10 0 0 200px', border='solid 2px black'))
+        self.volume_button.disabled = True
 
         # lbl_depth_Plotting = ipw.Label(value ='Plot depth hydrograph at a location:', layout=Layout(margin='10px 0 0 0'))
         lbl_depth_Plotting = ipw.HTML(value = f"<b><font color='blue'>{'Plot depth hydrograph at a location:'}</b>")
@@ -289,7 +294,7 @@ class Toolbox:
 
         depth_box = VBox(children = [lbl_depth_Plotting,self.point_preference, self.depth_plot_button])
 
-        plotting_box = VBox([lbl_Area_Plotting, self.area_unit, self.plot_button, depth_box], 
+        plotting_box = VBox([lbl_Area_Plotting, self.area_unit, self.plot_button, lbl_Volume_Plotting,self.vol_unit,self.volume_button, depth_box], 
                             layout=Layout(width='310px', border='solid 2px black'))
 
         lbl_Stats = ipw.HTML(value = f"<b><font color='blue'>{'Summary Statistics:'}</b>")
@@ -299,6 +304,9 @@ class Toolbox:
         self.lbl_Max_Depth = ipw.Label(value ='', layout=Layout(width='100px'))
         self.lbl_Min_Depth = ipw.Label(value ='', layout=Layout(width='100px'))
         self.lbl_Avg_Depth = ipw.Label(value ='', layout=Layout(width='100px'))
+        self.lbl_Max_Volume = ipw.Label(value ='', layout=Layout(width='100px'))
+        self.lbl_Min_Volume = ipw.Label(value ='', layout=Layout(width='100px'))
+        self.lbl_Avg_Volume = ipw.Label(value ='', layout=Layout(width='100px'))
 
         self.cap_Max_Area = ipw.Label(value ='Max. Area:')
         self.cap_Min_Area = ipw.Label(value ='Min. Area:')
@@ -306,10 +314,13 @@ class Toolbox:
         self.cap_Max_Depth = ipw.Label(value ='Max. Depth:')
         self.cap_Min_Depth = ipw.Label(value ='Min. Depth:')
         self.cap_Avg_Depth = ipw.Label(value ='Avg. Depth:')
+        self.cap_Max_Volume = ipw.Label(value ='Max. Volume:')
+        self.cap_Min_Volume = ipw.Label(value ='Min. Volume:')
+        self.cap_Avg_Volume = ipw.Label(value ='Avg. Volume:')
 
-        max_box = HBox([self.cap_Max_Area,self.lbl_Max_Area, self.cap_Max_Depth,self.lbl_Max_Depth])
-        min_box = HBox([self.cap_Min_Area,self.lbl_Min_Area, self.cap_Min_Depth,self.lbl_Min_Depth])
-        avg_box = HBox([self.cap_Avg_Area,self.lbl_Avg_Area, self.cap_Avg_Depth,self.lbl_Avg_Depth])
+        max_box = HBox([self.cap_Max_Area,self.lbl_Max_Area, self.cap_Max_Depth,self.lbl_Max_Depth, self.cap_Max_Volume,self.lbl_Max_Volume])
+        min_box = HBox([self.cap_Min_Area,self.lbl_Min_Area, self.cap_Min_Depth,self.lbl_Min_Depth, self.cap_Min_Volume, self.lbl_Min_Volume])
+        avg_box = HBox([self.cap_Avg_Area,self.lbl_Avg_Area, self.cap_Avg_Depth,self.lbl_Avg_Depth, self.cap_Avg_Volume, self.lbl_Avg_Volume])
 
         stats_box = VBox([lbl_Stats, max_box, min_box, avg_box])
 
@@ -610,6 +621,7 @@ class Toolbox:
         self.download_button.on_click(self.dowload_images)
         self.water_Frequency_button.on_click(self.water_frequency)
         self.depth_plot_button.on_click(self.plot_depths)
+        self.volume_button.on_click(self.plot_volumes)
         
 
     # Function to clip images
@@ -917,21 +929,21 @@ class Toolbox:
         returns:
             Water image with calculated total area of water pixels
         """
-        global unit_symbol
+        global area_unit_symbol
         unit = self.area_unit.value
         divisor = 1
         if unit =='Square Km':
             divisor = 1e6
-            unit_symbol = 'Sq km'
+            area_unit_symbol = 'Sq km'
         elif unit =='Hectares':
             divisor = 1e4
-            unit_symbol = 'Ha'
+            area_unit_symbol = 'Ha'
         elif unit =='Square m':
             divisor = 1
-            unit_symbol = 'Sq m'
+            area_unit_symbol = 'Sq m'
         else:
             divisor = 4047
-            unit_symbol = 'acre'
+            area_unit_symbol = 'acre'
 
         pixel_area = img.select('waterMask').multiply(ee.Image.pixelArea()).divide(divisor)
         img_area = pixel_area.reduceRegion(**{
@@ -959,7 +971,7 @@ class Toolbox:
             try:
                 global df
                 global save_water_data
-                save_water_data = True
+                save_water_data = 1
                 # Compute water areas
                 water_areas = self.WaterMasks.map(self.calc_area)
                 water_stats = water_areas.aggregate_array('water_area').getInfo()
@@ -981,7 +993,7 @@ class Toolbox:
                 self.fig.layout.title.x = 0.5
                 self.fig.layout.title.y = 0.9
 
-                self.fig.layout.yaxis.title = 'Area ('+unit_symbol+')'
+                self.fig.layout.yaxis.title = 'Area ('+area_unit_symbol+')'
 
                 scatter = self.fig.data[0] # set figure data to scatter for click function
 
@@ -1028,12 +1040,17 @@ class Toolbox:
         with self.feedback:
             self.feedback.clear_output()
             try:
-                if save_water_data==True:
+                if save_water_data==1:
                     filename = self.file_selector1.selected
                     water_df = df
-                    water_df = water_df.rename(columns={'Area':'Area, '+unit_symbol})
+                    water_df = water_df.rename(columns={'Area':'Area, '+area_unit_symbol})
                     water_df.to_csv(filename, index=False)
-                elif save_water_data==False:
+                elif save_water_data==2:
+                    filename = self.file_selector1.selected
+                    volume_df = vol_df
+                    volume_df = volume_df.rename(columns={'Volume':'Volume, '+vol_unit_symbol})
+                    volume_df.to_csv(filename, index=False)
+                elif save_water_data==3:
                     filename = self.file_selector1.selected
                     filtered_df = depths_df.drop(columns=['reducer'])
                     filtered_df = filtered_df[['date','Depth']]
@@ -1179,9 +1196,95 @@ class Toolbox:
                 colors = self.depthParams['palette']
                 self.Map.add_colorbar_branca(colors=colors, vmin=0, vmax=round(maxVal,1), layer_name='Depth')
                 self.depth_plot_button.disabled = False # enable depth plotting
+                self.volume_button.disabled = False
 
             except Exception as e:
                     print(e)
+                    
+    def calc_volume(self, img):
+        global vol_unit_symbol
+        unit = self.vol_unit.value
+        multiplier = 1
+        if unit =='Cubic m':
+            multiplier = 1
+            vol_unit_symbol = 'cu m'
+        elif unit =='Cubic ft':
+            multiplier = 35.3147
+            vol_unit_symbol = 'cu ft'
+        elif unit =='Litres':
+            multiplier = 1e3
+            vol_unit_symbol = 'litres'
+        else:
+            multiplier = 1.0/1233
+            vol_unit_symbol = 'ac-ft'
+        depth = img.select('Depth')
+        volume = depth.multiply(ee.Image.pixelArea()).multiply(multiplier)
+        total_volume = volume.reduceRegion(**{
+                        'reducer':ee.Reducer.sum(),
+                        'geometry':self.site.geometry(),
+                        'scale':self.img_scale,
+                        'maxPixels':1e13})
+        return img.set({'volume':total_volume})
+    
+    def plot_volumes(self, b):
+        with self.feedback:
+            self.feedback.clear_output()
+            try:
+                global vol_df
+                global save_water_data
+                save_water_data = 2
+                # Compute water areas
+                water_volumes = self.depth_maps.map(self.calc_volume)
+                volume_stats = water_volumes.aggregate_array('volume').getInfo()
+
+                self.dates = self.depth_maps.aggregate_array('system:time_start')\
+                    .map(lambda d: ee.Date(d).format('YYYY-MM-dd')).getInfo()
+
+                dates_lst = [datetime.strptime(i, '%Y-%m-%d') for i in self.dates]
+                y = [item.get('Depth') for item in volume_stats]
+                vol_df = pd.DataFrame(list(zip(dates_lst,y)), columns=['Date','Volume'])
+
+                self.fig.data = []
+
+                self.fig.add_trace(go.Scatter(x=vol_df['Date'], y=vol_df['Volume'], name='Volume Hydrograph', 
+                        mode='lines+markers', line=dict(dash = 'solid', color ='Blue', width = 0.5)))
+
+                self.fig.layout.title = '<b>Volume Hydrograph<b>'
+                self.fig.layout.titlefont = dict(family="Arial",size=24)
+                self.fig.layout.title.x = 0.5
+                self.fig.layout.title.y = 0.9
+
+                self.fig.layout.yaxis.title = 'Volume ('+vol_unit_symbol+')'
+
+                scatter = self.fig.data[0] # set figure data to scatter for click function
+
+                color_palette = self.index_color.value
+
+                max_vol_value = vol_df['Volume'].max()
+                min_vol_value = vol_df['Volume'].min()
+                avg_vol_value = vol_df['Volume'].mean()
+                self.lbl_Max_Volume.value = str(round(max_vol_value, 3))
+                self.lbl_Min_Volume.value = str(round(min_vol_value, 3))
+                self.lbl_Avg_Volume.value = str(round(avg_vol_value, 3))
+
+                # Function to select and show images on clicking the graph
+                def update_point(trace, points, selector):
+                    global wImage
+                    global selected_sat
+                    date = vol_df['Date'].iloc[points.point_inds].values[0]
+                    date = pd.to_datetime(str(date))
+                    selected_image = self.depth_maps.closest(date)
+                    wImage = selected_image.select('waterMask')
+                    depthImage = selected_image.select('Depth')
+                    self.Map.addLayer(selected_image, self.visParams, self.imageType)
+                    self.Map.addLayer(wImage, {'palette': color_palette}, 'Water')
+                    self.Map.addLayer(depthImage, self.depthParams, 'Depth')
+
+                scatter.on_click(update_point)
+
+            except Exception as e:
+                    print(e)
+                    print('An error occurred during computation.')
 
     def plot_depths(self, b):
         with self.feedback:
@@ -1189,7 +1292,7 @@ class Toolbox:
             try: 
                 global depths_df
                 global save_water_data
-                save_water_data = False
+                save_water_data = 3
                 if self.point_preference.index == 0:
                     point = ee.FeatureCollection(self.Map.draw_last_feature)
                 else:
