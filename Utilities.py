@@ -45,8 +45,12 @@ def DSWE(imgCollection, DEM, aoi=None):
     # ----------------------------------------------------------------------
     def addHillshade(img):
         solar_azimuth = img.get('SOLAR_AZIMUTH_ANGLE')
-        solar_zenith = img.get('SOLAR_ZENITH_ANGLE'); # solar altitude = 90-zenith
-        solar_altitude = ee.Number(90).subtract(ee.Number(solar_zenith))
+        solar_zenith = img.get('SOLAR_ZENITH_ANGLE')
+#         solar_azimuth = ee.Number(img.get('SUN_AZIMUTH')).multiply(3.14159265359).divide(180)
+#         solar_zenith = ee.Number(img.get('SUN_ELEVATION')).multiply(3.14159265359).divide(180)
+#         solar_azimuth = img.get('SUN_AZIMUTH')
+#         solar_zenith = img.get('SUN_ELEVATION')
+        solar_altitude = ee.Number(90).subtract(ee.Number(solar_zenith)) # solar altitude = 90-zenith
         return img.addBands(ee.Terrain.hillshade(dem, solar_azimuth, solar_altitude).rename('hillshade'))
 
     # Add hillshade bands
@@ -191,6 +195,193 @@ def DSWE(imgCollection, DEM, aoi=None):
         dswe_Images = dswe_Images_mosaic.map(clipImages)
 
     return dswe_Images
+
+def DSWE_2(imgCollection, DEM, aoi=None):
+    
+    """ Computes the DSWE water index for landsat image collection
+    
+    args:
+        imgCollection: ee.Imagecollection 
+            Landsat image collection
+        DEM: digital elevation model
+        aoi: area of interest or study area bounday
+    returns:
+        ee.ImageCollection
+        collection of DWSE images
+    """
+    dem = DEM
+    aoi = aoi
+
+    def clipImages(img):
+            clipped_image = img.clip(aoi).copyProperties(img, ['system:time_start'])
+            return clipped_image
+
+
+    # Mask clouds, cloud shadows, and snow
+    def maskClouds(img):
+        qa = img.select(['pixel_qa'])
+        clouds = qa.bitwiseAnd(8).neq(0).Or(qa.bitwiseAnd(16).neq(0)).Or(qa.bitwiseAnd(32).neq(0)) # Cloud
+        return img.addBands(clouds.rename('clouds')) # Add band of contaminated pixels
+
+    # Apply mask
+    img_masked = imgCollection.map(maskClouds)
+
+    # ----------------------------------------------------------------------
+    # Calculate hillshade mask
+    # ----------------------------------------------------------------------
+    def addHillshade(img):
+#         solar_azimuth = img.get('SOLAR_AZIMUTH_ANGLE')
+#         solar_zenith = img.get('SOLAR_ZENITH_ANGLE')
+#         solar_azimuth = ee.Number(img.get('SUN_AZIMUTH')).multiply(3.14159265359).divide(180)
+#         solar_zenith = ee.Number(img.get('SUN_ELEVATION')).multiply(3.14159265359).divide(180)
+        solar_azimuth = img.get('SUN_AZIMUTH')
+        solar_zenith = img.get('SUN_ELEVATION')
+#         solar_altitude = ee.Number(90).subtract(ee.Number(solar_zenith)) # solar altitude = 90-zenith
+        return img.addBands(ee.Terrain.hillshade(dem, solar_azimuth, solar_zenith).rename('hillshade'))
+
+    # Add hillshade bands
+    img_hillshade = img_masked.map(addHillshade)
+    # ----------------------------------------------------------------------
+    # Calculate DSWE indices
+    # ----------------------------------------------------------------------
+    def addIndices(img):
+        # NDVI
+        img = img.addBands(img.normalizedDifference(['nir', 'red']).select([0], ['ndvi']))
+        # MNDWI (Modified Normalized Difference Wetness Index) = (Green - SWIR1) / (Green + SWIR1)
+        img = img.addBands(img.normalizedDifference(['green', 'swir1']).select([0], ['mndwi']))
+        # MBSRV (Multi-band Spectral Relationship Visible) = Green + Red
+        img = img.addBands(img.select('green').add(img.select('red')).select([0], ['mbsrv'])).toFloat()
+        # MBSRN (Multi-band Spectral Relationship Near-Infrared) = NIR + SWIR1
+        img = img.addBands(img.select('nir').add(img.select('swir1')).select([0], ['mbsrn']).toFloat())
+        # AWEsh (Automated Water Extent Shadow) = Blue + (2.5 * Green) + (-1.5 * mbsrn) + (-0.25 * SWIR2)
+        img = img.addBands(img.expression('blue + (2.5 * green) + (-1.5 * mbsrn) + (-0.25 * swir2)', {
+             'blue': img.select('blue'),
+             'green': img.select('green'),
+             'mbsrn': img.select('mbsrn'),
+             'swir2': img.select('swir2')
+        }).select([0], ['awesh'])).toFloat()
+        return img
+
+    # Add indices
+    img_indices = img_hillshade.map(addIndices)
+    # ----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
+    # DSWE parameter testing
+    # ----------------------------------------------------------------------
+    # 1. ========== Function: test MNDWI ===========
+    # If (MNDWI > 0.124) set the ones digit (i.e., 00001)
+    def test_mndwi(img):
+        mask = img.select('mndwi').gt(0.124)
+        return img.addBands(mask \
+                .bitwiseAnd(0x1F) \
+                .rename('mndwi_bit'))
+
+    # 2. ======== Function: compare MBSRV and MBSRN ========
+    # If (MBSRV > MBSRN) set the tens digit (i.e., 00010)
+    def test_mbsrv_mbsrn(img):
+        mask = img.select('mbsrv').gt(img.select('mbsrn'))
+        return img.addBands(mask \
+                .bitwiseAnd(0x1F) \
+                .leftShift(1) \
+                .rename('mbsrn_bit'))
+
+    # 3. ======== Function: test AWEsh ========
+    # If (AWEsh > 0.0) set the hundreds digit (i.e., 00100)
+    def test_awesh(img):
+        mask = img.select('awesh').gt(0.0)
+        return img.addBands(mask \
+                  .bitwiseAnd(0x1F) \
+                  .leftShift(2) \
+                  .rename('awesh_bit'))
+
+    # 4. ======= Function: test PSW1 ========
+    # If (MNDWI > -0.44 && SWIR1 < 900 && NIR < 1500 & NDVI < 0.7) set the thousands digit (i.e., 01000)
+    def test_mndwi_swir1_nir(img):
+        mask = img.select('mndwi').gt(-0.44) \
+                  .And(img.select('swir1').lt(900)) \
+                  .And(img.select('nir').lt(1500)) \
+                  .And(img.select('ndvi').lt(0.7))
+        return img.addBands(mask \
+                .bitwiseAnd(0x1F) \
+                .leftShift(3) \
+                .rename('swir1_bit'))
+
+    # 5. ======= Function: test PSW2 =========
+    # If (MNDWI > -0.5 && SWIR1 < 3000 && SWIR2 < 1000 && NIR < 2500 && Blue < 1000) set the ten-thousands digit (i.e., 10000)
+    def test_mndwi_swir2_nir(img):
+        mask = img.select('mndwi').gt(-0.5) \
+                  .And(img.select('swir1').lt(3000)) \
+                  .And(img.select('swir2').lt(1000)) \
+                  .And(img.select('nir').lt(2500)) \
+                  .And(img.select('blue').lt(1000))
+        return img.addBands(mask \
+                  .bitwiseAnd(0x1F) \
+                  .leftShift(4) \
+                  .rename('swir2_bit'))
+
+    # Add all bitwise bands to image collection
+    img_indices_bit = ee.ImageCollection(img_indices) \
+                  .map(test_mndwi) \
+                  .map(test_mbsrv_mbsrn) \
+                  .map(test_awesh) \
+                  .map(test_mndwi_swir1_nir) \
+                  .map(test_mndwi_swir2_nir)
+
+    # Function: consolidate individual bit bands
+    def sum_bit_bands(img):
+        bands = img.select(['mndwi_bit', 'mbsrn_bit', 'awesh_bit', 'swir1_bit', 'swir2_bit'])
+        summed_bands = bands.reduce(ee.Reducer.bitwiseOr())
+        return img.addBands(summed_bands.rename('summed_bit_band'))
+
+    # Add individual bit bands to image collection and summarize
+    img_indices_bit = ee.ImageCollection(img_indices) \
+                  .map(test_mndwi) \
+                  .map(test_mbsrv_mbsrn) \
+                  .map(test_awesh) \
+                  .map(test_mndwi_swir1_nir) \
+                  .map(test_mndwi_swir2_nir) \
+                  .map(sum_bit_bands)
+    # --------------------------------------------------------
+    # Produce DSWE layers
+    # ----------------------------------------------------------------------
+    # Construct slope image from DEM
+    #dem = dem.clip(aoi); # removed clipping in an attempt to speed up script
+    slope = ee.Terrain.slope(dem)
+    # Convert binary code into 4 DSWE categories
+    def convert_bin_dswe(img):
+        reclass = img.select('summed_bit_band').remap([0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                                                10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+                                                20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+                                                30, 31],
+
+                                                [0, 0, 0, 4, 0, 4, 4, 2, 0, 4,
+                                                 4, 2, 4, 2, 2, 1, 4, 4, 4, 2,
+                                                 4, 2, 2, 1, 3, 2, 2, 1, 2, 1,
+                                                 1, 1]).rename('dswe')
+        # ID cloud-contaminated pixels
+        reclass = reclass.where(img.select('clouds').eq(1), 9)
+        # ID shaded areas
+        reclass = reclass.where(img.select('hillshade').lte(110), 8)
+        # ID slopes
+        reclass = reclass.where(img.select('dswe').eq(4) and slope.gte(5.71).Or  # 10% slope = 5.71°
+                      (img.select('dswe').eq(3) and slope.gte(11.31)).Or           # 20% slope = 11.31°
+                      (img.select('dswe').eq(2) and slope.gte(16.7)).Or            # 30% slope = 16.7°
+                      (img.select('dswe').eq(1) and slope.gte(16.7)), 0);          # 30% slope = 16.7°
+
+#         return img.addBands(reclass).select('dswe')
+        return img.addBands(reclass)
+
+    img_indices_all = img_indices_bit.map(convert_bin_dswe)
+    dswe_Images_mosaic = tools.imagecollection.mosaicSameDay(img_indices_all)
+
+    if aoi is None:
+        dswe_Images = dswe_Images_mosaic
+    else:
+#         dswe_Images = dswe_Images_mosaic.select('dswe').map(clipImages)
+        dswe_Images = dswe_Images_mosaic.map(clipImages)
+
+    return dswe_Images
+
 
 
 def load_Landsat_Coll_2(aoi, StartDate, EndDate, cloud_thresh):
