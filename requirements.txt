@@ -4,7 +4,7 @@ geemap
 geetools
 ipyfilechooser
 matplotlib
-ipywidgets
+ipywidgets==7.7.2
 pandas
 hydrafloods
 plotly
