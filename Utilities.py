@@ -641,9 +641,11 @@ def load_boundary(boundaryfile):
     if extension == "shp":       
         aoi = geemap.shp_to_ee(boundaryfile)
     elif extension == "kml":
-        aoi = geemap.kml_to_ee(boundaryfile)
+        geemap.kml_to_shp(boundaryfile,'shape.shp')
+        aoi = geemap.shp_to_ee('shape.shp')  
     else:
-        aoi = geemap.kmz_to_ee(boundaryfile)
+#         aoi = geemap.kmz_to_ee(boundaryfile)
+        None
     return aoi
 
 def maskS2clouds(image):
