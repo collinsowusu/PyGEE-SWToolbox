@@ -457,7 +457,7 @@ def load_Landsat_Coll_2(aoi, StartDate, EndDate, cloud_thresh):
         .select(sensor_band_dict.get('l8'), bandNames)
     
     # --------------------------------------------------------
-    # Landsat 9 - Data availability Apr 11, 2014 - present
+    # Landsat 9 - Data availability Oct 31, 2021 - present
     ls9 = ee.ImageCollection('LANDSAT/LC09/C02/T1_L2') \
         .filterBounds(aoi.geometry()) \
         .select(sensor_band_dict.get('l9'), bandNames)
@@ -475,73 +475,6 @@ def load_Landsat_Coll_2(aoi, StartDate, EndDate, cloud_thresh):
     l45789_scaled = l45789.map(applyScaleFactors)
 
     return l45789_scaled
-    
-def load_Landsat_Coll_1(aoi, StartDate, EndDate, cloud_thresh):
-        
-    """
-    Function to retrieve and filter Landsat images
-
-    args:
-        aoi: region of interest
-        StartDate: Starting date to filter data
-        EndDate: End date to filter data
-        cloud_thresh: Threshold for filtering cloudy images
-
-    returns:
-        Image collection of Landsat images
-    """
-    # Define Landsat surface reflectance bands
-    sensor_band_dict = ee.Dictionary({
-                        'l8' : ee.List([1,2,3,4,5,6,10]),
-                        'l7' : ee.List([0,1,2,3,4,6,9]),
-                        'l5' : ee.List([0,1,2,3,4,6,9]),
-                        'l4' : ee.List([0,1,2,3,4,6,9])
-                        })
-    # Sensor band names corresponding to selected band numbers
-    bandNames = ee.List(['blue','green','red','nir','swir1','swir2','pixel_qa'])
-    # ------------------------------------------------------
-    # Landsat 4 - Data availability Aug 22, 1982 - Dec 14, 1993
-    ls4 = ee.ImageCollection('LANDSAT/LT04/C01/T1_SR') \
-              .filterBounds(aoi.geometry()) \
-              .select(sensor_band_dict.get('l4'), bandNames)
-
-    # Landsat 5 - Data availability Jan 1, 1984 - May 5, 2012
-    ls5 = ee.ImageCollection('LANDSAT/LT05/C01/T1_SR') \
-              .filterBounds(aoi.geometry()) \
-              .select(sensor_band_dict.get('l5'), bandNames)
-
-    # Landsat 7 - Data availability Jan 1, 1999 - Aug 9, 2016
-    # SLC-off after 31 May 2003
-    ls7 = ee.ImageCollection('LANDSAT/LE07/C01/T1_SR') \
-                  .filterDate('1999-01-01', '2003-05-31') \
-                  .filterBounds(aoi.geometry()) \
-                  .select(sensor_band_dict.get('l7'), bandNames)
-
-    # Post SLC-off; fill the LS 5 gap
-    # -------------------------------------------------------
-    # Landsat 7 - Data availability Jan 1, 1999 - Aug 9, 2016
-    # SLC-off after 31 May 2003
-    ls7_2 = ee.ImageCollection('LANDSAT/LE07/C01/T1_SR') \
-                  .filterDate('2012-05-05', '2014-04-11') \
-                  .filterBounds(aoi.geometry()) \
-                  .select(sensor_band_dict.get('l7'), bandNames)
-
-    # --------------------------------------------------------
-    # Landsat 8 - Data availability Apr 11, 2014 - present
-    ls8 = ee.ImageCollection('LANDSAT/LC08/C01/T1_SR') \
-                  .filterBounds(aoi.geometry()) \
-                  .select(sensor_band_dict.get('l8'), bandNames)
-
-    # Merge landsat collections
-    l4578 = ee.ImageCollection(ls4 \
-              .merge(ls5) \
-              .merge(ls7) \
-              .merge(ls7_2) \
-              .merge(ls8).sort('system:time_start')) \
-              .filterDate(StartDate, EndDate)\
-            .filter(ee.Filter.lt('CLOUD_COVER', cloud_thresh))
-
-    return l4578
 
 def load_Sentinel1(site, StartDate, EndDate):
     """
