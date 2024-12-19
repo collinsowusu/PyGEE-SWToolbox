@@ -75,7 +75,7 @@ class Toolbox:
 
         dataset_Label = ipw.Label('Select Dataset:', layout=Layout(margin='5px 0 0 5px')) #top right bottom left
 
-        Platform_options = ['Landsat-Collection 1', 'Landsat-Collection 2','Sentinel-1', 'Sentinel-2', 'USDA NAIP' ]
+        Platform_options = ['Landsat-Collection 2','Sentinel-1', 'Sentinel-2', 'USDA NAIP' ]
 
         self.Platform_dropdown = ipw.Dropdown(options = Platform_options, value = None,
                                            layout=Layout(width='150px', margin='5px 0 0 5px'))
@@ -403,21 +403,7 @@ class Toolbox:
                 None
             """
             try:
-
-                if self.Platform_dropdown.value == 'Landsat-Collection 1':
-                    self.visParams = {'bands': ['red', 'green', 'blue'],
-                          'min': 0,
-                          'max': 3000,
-                          'gamma':1.4
-                          }
-                    self.cloud_threshold.disabled = False
-                    self.water_indices.disabled = False
-                    self.index_color.disabled = False
-                    self.threshold_value.disabled = False
-                    self.water_indices.options = ['NDWI','MNDWI','DSWE','AWEInsh', 'AWEIsh']
-                    self.threshold_dropdown.options = ['Simple','Otsu']
-                    self.filter_dropdown.disabled = True
-                elif self.Platform_dropdown.value == 'Landsat-Collection 2':
+                if self.Platform_dropdown.value == 'Landsat-Collection 2':
                     self.visParams = {'bands': ['red', 'green', 'blue'],
                           'min': 0,
                           'max': 0.3,
@@ -680,11 +666,7 @@ class Toolbox:
                     return img.convolve(boxcar)
 
                 # filter image collection based on date, study area and cloud threshold(depends of datatype)
-                if self.imageType == 'Landsat-Collection 1':
-                    self.filtered_landsat = load_Landsat_Coll_1(self.site, self.StartDate, self.EndDate, cloud_thresh)
-#                     self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
-                    self.filtered_Collection = self.filtered_landsat.map(cloudMaskL457)
-                elif self.imageType == 'Landsat-Collection 2':
+                if self.imageType == 'Landsat-Collection 2':
                     self.filtered_landsat = load_Landsat_Coll_2(self.site, self.StartDate, self.EndDate, cloud_thresh)
                     self.filtered_Collection = self.filtered_landsat.map(maskLandsatclouds)
                 elif self.imageType == 'Sentinel-2':
@@ -776,7 +758,7 @@ class Toolbox:
                     """
                     index_image = ee.Image(1)
                     if self.water_indices.value == 'NDWI':
-                        if self.imageType == 'Landsat-Collection 1' or self.imageType == 'Landsat-Collection 2' or self.imageType == 'Sentinel-2':
+                        if self.imageType == 'Landsat-Collection 2' or self.imageType == 'Sentinel-2':
                             bands = ['green', 'nir']
                         elif self.imageType == 'USDA NAIP':
                             bands = ['G', 'N']
@@ -784,7 +766,7 @@ class Toolbox:
                             .copyProperties(img, ['system:time_start'])
 
                     elif self.water_indices.value == 'MNDWI':
-                        if self.imageType == 'Landsat-Collection 1' or self.imageType == 'Landsat-Collection 2':
+                        if self.imageType == 'Landsat-Collection 2':
                             bands = ['green', 'swir1']
                             index_image = img.normalizedDifference(bands).rename('waterIndex')\
                                 .copyProperties(img, ['system:time_start'])
@@ -887,13 +869,10 @@ class Toolbox:
                     self.WaterMasks = self.water_images.map(mask_Water)
                     # self.visParams = {'min': 0,'max': 1, 'palette': color_palette}
                     self.Map.addLayer(self.WaterMasks.select('waterMask').max(), {'palette': color_palette}, 'Water')
-                elif self.imageType == 'Landsat-Collection 1' or self.imageType == 'Landsat-Collection 2':
+                elif self.imageType == 'Landsat-Collection 2':
                     if self.water_indices.value == 'DSWE':
                         dem = ee.Image('USGS/SRTMGL1_003')
-                        if self.imageType == 'Landsat-Collection 1':
-                            self.dswe_images = DSWE(self.filtered_landsat, dem, self.site)
-                        else:
-                            self.dswe_images = DSWE_2(self.filtered_landsat, dem, self.site)
+                        self.dswe_images = DSWE_2(self.filtered_landsat, dem, self.site)
                             # Viz parameters: classes: 0, 1, 2, 3, 4, 9
                         self.dswe_viz = {'min':0, 'max': 9, 'palette': ['000000', '002ba1', '6287ec', '77b800', 'c1bdb6', 
                                                                     '000000', '000000', '000000', '000000', 'ffffff']}
