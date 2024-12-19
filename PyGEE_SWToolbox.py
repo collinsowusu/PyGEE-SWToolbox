@@ -236,13 +236,13 @@ class Toolbox:
                                         layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
         self.elevData_options.disabled = False
         
-        # self.elev_Methods = ipw.Dropdown(options=['Random Forest','Mod_Stumpf','Mod_Lyzenga','FwDET'], value='Random Forest',
-        #                     description='Depth method:',
-        #                     layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
-        
-        self.elev_Methods = ipw.Dropdown(options=['Experimental','FwDET'], value='FwDET',
+        self.elev_Methods = ipw.Dropdown(options=['Random Forest','Mod_Stumpf','Mod_Lyzenga','FwDET'], value='Random Forest',
                             description='Depth method:',
                             layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
+        
+        # self.elev_Methods = ipw.Dropdown(options=['Experimental','FwDET'], value='FwDET',
+        #                     description='Depth method:',
+        #                     layout=Layout(width='210px', margin='0 0 0 10px'), style = style)
         
         self.elev_Methods.disabled = True
 
