@@ -534,7 +534,7 @@ def load_Sentinel2(aoi, StartDate, EndDate, cloud_thresh):
     returns:
         Image collection of Sentinel-2 images
     """
-    filtered_col = ee.ImageCollection('COPERNICUS/S2_SR')\
+    filtered_col = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')\
         .filterDate(StartDate,EndDate)\
         .filterBounds(aoi)\
         .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', cloud_thresh))\
